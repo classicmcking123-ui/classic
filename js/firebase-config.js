@@ -1,5 +1,4 @@
-// Shared Firebase initialization. Loaded after the firebase-app/auth/firestore
-// compat SDK scripts, before any page-specific script that calls firebase.*.
+// Load after the firebase-app/auth/firestore compat SDK scripts.
 const firebaseConfig = {
     apiKey: "AIzaSyD_XgylPtO6SwzhYqH9fETTBnVYtOEpFYE",
     authDomain: "aligalialigali-bdce7.firebaseapp.com",
@@ -12,5 +11,5 @@ const firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
 const db = firebase.firestore();
-// Only pages that also load firebase-storage-compat.js get a working storage client
+// Only pages that also load firebase-storage-compat.js get a storage client
 const storage = typeof firebase.storage === 'function' ? firebase.storage() : null;

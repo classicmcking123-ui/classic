@@ -5,94 +5,40 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>StudyHive - Course Outlines</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="css/app.css">
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#ff416c">
-    <script src="idle-timeout.js"></script>
-    <script src="register-sw.js"></script>
+    <script src="js/register-sw.js"></script>
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
-        body { background-color: #1a1a1a; color: #ffffff; min-height: 100vh; display: flex; flex-direction: column; transition: 0.3s; }
-
-        /* Thin, dark scrollbars so panels feel considered rather than default-browser */
-        ::-webkit-scrollbar { width: 8px; height: 8px; }
-        ::-webkit-scrollbar-track { background: transparent; }
-        ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.12); border-radius: 4px; }
-        ::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.2); }
-        .light-mode ::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.15); }
-        .light-mode ::-webkit-scrollbar-thumb:hover { background: rgba(0,0,0,0.25); }
-
-        /* Light Mode Variables */
-        body.light-mode { background-color: #f4f4f9; color: #333; }
-        .light-mode nav { background: rgba(255,255,255,0.85); border-bottom-color: rgba(0,0,0,0.06); }
-        .light-mode .nav-links a { color: #555; }
-        .light-mode .nav-links a:hover { color: #ff416c; }
-        .light-mode .page-header { border-bottom-color: #ddd; }
-        .light-mode .course-card { background-color: #fff; border-color: #e0e0e0; box-shadow: 0 2px 5px rgba(0,0,0,0.02); }
-        .light-mode .course-header:hover { background-color: #fafafa; }
-        .light-mode .course-header h3 { color: #222; }
-        .light-mode .course-content { border-top-color: #eee; }
-        .light-mode .course-content ul li { color: #555; }
-        .light-mode .course-content ul li::before { color: #ff416c; }
-
-        /* Navigation */
-        nav { background: rgba(13, 13, 15, 0.85); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); padding: 18px 40px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(255,255,255,0.06); position: sticky; top: 0; z-index: 50; }
-        .logo { font-size: 24px; font-weight: 800; letter-spacing: -0.3px; background: linear-gradient(to right, #ff4b2b, #ff416c); background-clip: text; -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
-        .nav-links a { color: #ccc; text-decoration: none; margin-left: 20px; font-size: 14px; font-weight: 500; transition: color 0.2s; }
-        .nav-links a:hover { color: #ff416c; }
-
-        /* Layout */
         .container { flex: 1; padding: 40px; max-width: 900px; margin: 0 auto; width: 100%; }
-        
-        .page-header { margin-bottom: 30px; padding-bottom: 15px; border-bottom: 1px solid #333; display: flex; justify-content: space-between; align-items: flex-end; }
-        .page-header h1 { font-size: 24px; color: #ff416c; }
-        .page-header p { color: #aaa; font-size: 14px; margin-top: 5px; }
-        .back-btn { background: #222; color: #fff; border: 1px solid #444; padding: 8px 15px; border-radius: 5px; text-decoration: none; font-size: 12px; transition: 0.3s; }
-        .back-btn:hover { background: #ff416c; border-color: #ff416c; }
-
-        /* Accordion Cards */
-        .course-card { background-color: #222; border: 1px solid #333; border-radius: 8px; margin-bottom: 15px; overflow: hidden; transition: 0.3s; }
-        .course-card:hover { border-color: #444; box-shadow: 0 6px 16px rgba(0,0,0,0.25); }
 
         @keyframes cardIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-        .course-card { animation: cardIn 0.4s ease backwards; }
-        .course-card:nth-child(3) { animation-delay: 0.04s; }
-        .course-card:nth-child(4) { animation-delay: 0.08s; }
-        .course-card:nth-child(5) { animation-delay: 0.12s; }
-        .course-card:nth-child(6) { animation-delay: 0.16s; }
-        .course-card:nth-child(7) { animation-delay: 0.2s; }
-        .course-card:nth-child(8) { animation-delay: 0.24s; }
-        .course-card:nth-child(9) { animation-delay: 0.28s; }
+
+        .course-card { background-color: #222; border: 1px solid #333; border-radius: 8px; margin-bottom: 15px; overflow: hidden; transition: 0.3s; animation: cardIn 0.4s ease backwards; }
+        .course-card:hover { border-color: #444; box-shadow: 0 6px 16px rgba(0,0,0,0.25); }
 
         .course-header { padding: 20px; display: flex; justify-content: space-between; align-items: center; cursor: pointer; transition: background 0.2s; }
         .course-header:hover { background-color: #2a2a2a; }
         .course-header h3 { font-size: 16px; font-weight: 600; }
         .unit-badge { background: rgba(255, 65, 108, 0.1); color: #ff416c; padding: 4px 8px; border-radius: 4px; font-size: 12px; margin-left: 10px; border: 1px solid rgba(255, 65, 108, 0.3); }
         .chevron { transition: transform 0.3s ease; color: #888; }
-        
-        .course-content { max-height: 0; overflow: hidden; transition: max-height 0.4s ease-out; background-color: transparent; }
-        .course-content-inner { padding: 20px; border-top: 1px solid #333; }
-        
-        /* Expand state */
         .course-card.active .chevron { transform: rotate(180deg); color: #ff416c; }
-        
-        /* List Styling */
+
+        /* Collapsed by default; toggleCourse() sets max-height to the content height to animate open */
+        .course-content { max-height: 0; overflow: hidden; transition: max-height 0.4s ease-out; }
+        .course-content-inner { padding: 20px; border-top: 1px solid #333; }
         .course-content ul { list-style: none; padding-left: 10px; }
         .course-content ul li { position: relative; padding-left: 20px; margin-bottom: 12px; font-size: 14px; color: #ddd; line-height: 1.5; }
         .course-content ul li::before { content: "•"; position: absolute; left: 0; color: #ff4b2b; font-size: 20px; line-height: 1; top: -2px; }
-        .course-note { margin-top: 15px; padding: 10px; background: rgba(0,0,0,0.2); border-left: 3px solid #25D366; font-size: 12px; color: #aaa; font-style: italic; }
 
-        /* --- Mobile: shrink the nav so the logo + links fit on one line instead of wrapping --- */
-        @media (max-width: 480px) {
-            nav { padding: 14px 18px; }
-            .logo { font-size: 19px; }
-            .nav-links a { margin-left: 12px; font-size: 12px; }
-            .container { padding: 20px; }
-        }
+        .light-mode .course-card { background-color: #fff; border-color: #e0e0e0; box-shadow: 0 2px 5px rgba(0,0,0,0.02); }
+        .light-mode .course-header:hover { background-color: #fafafa; }
+        .light-mode .course-header h3 { color: #222; }
+        .light-mode .course-content ul li { color: #555; }
+        .light-mode .course-content ul li::before { color: #ff416c; }
     </style>
 </head>
 <body>
-
-    <!-- Navigation (rendered by app.js) -->
     <div id="navbar-container"></div>
 
     <div class="container">
@@ -104,227 +50,160 @@
             <a href="home.html" class="back-btn"><i class="fas fa-arrow-left"></i> Back to Dash</a>
         </div>
 
-        <!-- Course 1 -->
-        <div class="course-card">
-            <div class="course-header" onclick="toggleCard(this)">
-                <div>
-                    <h3>ENT211 — Entrepreneurship and Innovation <span class="unit-badge">2 Units</span></h3>
-                </div>
-                <i class="fas fa-chevron-down chevron"></i>
-            </div>
-            <div class="course-content">
-                <div class="course-content-inner">
-                    <ul>
-                        <li>Meaning and concepts of entrepreneurship</li>
-                        <li>Theories of entrepreneurship</li>
-                        <li>Characteristics and qualities of an entrepreneur</li>
-                        <li>Entrepreneurial opportunities and opportunity recognition</li>
-                        <li>Entrepreneurial/creative thinking</li>
-                        <li>Innovation and its dimensions</li>
-                        <li>Business ownership and enterprise formation</li>
-                        <li>Business planning and networking</li>
-                        <li>Entrepreneurship in Nigeria and e-commerce</li>
-                    </ul>
-                </div>
-            </div>
-        </div>
-
-        <!-- Course 2 -->
-        <div class="course-card">
-            <div class="course-header" onclick="toggleCard(this)">
-                <div>
-                    <h3>GET201 — Applied Electricity I <span class="unit-badge">3 Units</span></h3>
-                </div>
-                <i class="fas fa-chevron-down chevron"></i>
-            </div>
-            <div class="course-content">
-                <div class="course-content-inner">
-                    <ul>
-                        <li>Basic electrical quantities and units</li>
-                        <li>Electrical circuit components</li>
-                        <li>Ohm's Law</li>
-                        <li>Series and parallel circuits</li>
-                        <li>Kirchhoff's Current and Voltage Laws</li>
-                        <li>Network/circuit analysis</li>
-                        <li>Capacitors and inductors</li>
-                        <li>Electrical measuring instruments</li>
-                        <li>Magnetic circuits and electromagnetic principles</li>
-                    </ul>
-                </div>
-            </div>
-        </div>
-
-        <!-- Course 3 -->
-        <div class="course-card">
-            <div class="course-header" onclick="toggleCard(this)">
-                <div>
-                    <h3>GET203 — Engineering Graphics and Solid Modeling II <span class="unit-badge">2 Units</span></h3>
-                </div>
-                <i class="fas fa-chevron-down chevron"></i>
-            </div>
-            <div class="course-content">
-                <div class="course-content-inner">
-                    <ul>
-                        <li>Orthographic projection</li>
-                        <li>Isometric and oblique drawings</li>
-                        <li>Sectional views</li>
-                        <li>Auxiliary views</li>
-                        <li>Dimensioning and tolerances</li>
-                        <li>Intersections and developments</li>
-                        <li>Assembly drawings</li>
-                        <li>3D solid modelling</li>
-                        <li>CAD principles and applications</li>
-                    </ul>
-                </div>
-            </div>
-        </div>
-
-        <!-- Course 4 -->
-        <div class="course-card">
-            <div class="course-header" onclick="toggleCard(this)">
-                <div>
-                    <h3>GET205 — Fundamentals of Fluid Mechanics <span class="unit-badge">3 Units</span></h3>
-                </div>
-                <i class="fas fa-chevron-down chevron"></i>
-            </div>
-            <div class="course-content">
-                <div class="course-content-inner">
-                    <ul>
-                        <li>Properties of fluids</li>
-                        <li>Fluid pressure and pressure measurement</li>
-                        <li>Hydrostatics</li>
-                        <li>Fluid kinematics</li>
-                        <li>Continuity equation</li>
-                        <li>Bernoulli's equation</li>
-                        <li>Fluid flow in pipes</li>
-                        <li>Dimensional analysis and similitude</li>
-                        <li>Hydraulic machines</li>
-                    </ul>
-                </div>
-            </div>
-        </div>
-
-        <!-- Course 5 -->
-        <div class="course-card">
-            <div class="course-header" onclick="toggleCard(this)">
-                <div>
-                    <h3>GET207 — Applied Mechanics <span class="unit-badge">3 Units</span></h3>
-                </div>
-                <i class="fas fa-chevron-down chevron"></i>
-            </div>
-            <div class="course-content">
-                <div class="course-content-inner">
-                    <ul>
-                        <li>Fundamental concepts of mechanics</li>
-                        <li>Force systems</li>
-                        <li>Moments and couples</li>
-                        <li>Resultant forces</li>
-                        <li>Equilibrium of particles</li>
-                        <li>Equilibrium of rigid bodies</li>
-                        <li>Friction</li>
-                        <li>Centroids and centres of gravity</li>
-                        <li>Kinematics and dynamics</li>
-                    </ul>
-                </div>
-            </div>
-        </div>
-
-        <!-- Course 6 -->
-        <div class="course-card">
-            <div class="course-header" onclick="toggleCard(this)">
-                <div>
-                    <h3>GET209 — Engineering Mathematics I <span class="unit-badge">3 Units</span></h3>
-                </div>
-                <i class="fas fa-chevron-down chevron"></i>
-            </div>
-            <div class="course-content">
-                <div class="course-content-inner">
-                    <ul>
-                        <li>Algebra and functions</li>
-                        <li>Complex numbers</li>
-                        <li>Matrices and determinants</li>
-                        <li>Vectors</li>
-                        <li>Differentiation & Applications of differentiation</li>
-                        <li>Integration & Applications of integration</li>
-                        <li>Differential equations</li>
-                    </ul>
-                </div>
-            </div>
-        </div>
-
-        <!-- Course 7 -->
-        <div class="course-card">
-            <div class="course-header" onclick="toggleCard(this)">
-                <div>
-                    <h3>GET211 — Computing and Software Engineering <span class="unit-badge">3 Units</span></h3>
-                </div>
-                <i class="fas fa-chevron-down chevron"></i>
-            </div>
-            <div class="course-content">
-                <div class="course-content-inner">
-                    <ul>
-                        <li>Introduction to computers and computing</li>
-                        <li>Computer hardware and software</li>
-                        <li>Number systems and data representation</li>
-                        <li>Algorithms and flowcharts</li>
-                        <li>Programming fundamentals (Variables, data types, operators)</li>
-                        <li>Control structures (selection and loops)</li>
-                        <li>Functions, arrays and data structures</li>
-                        <li>Software engineering principles and development</li>
-                    </ul>
-                </div>
-            </div>
-        </div>
-
-        <!-- Course 8 -->
-        <div class="course-card">
-            <div class="course-header" onclick="toggleCard(this)">
-                <div>
-                    <h3>OOU-EEE201 — Electrical Laboratory and Installation I <span class="unit-badge">1 Unit</span></h3>
-                </div>
-                <i class="fas fa-chevron-down chevron"></i>
-            </div>
-            <div class="course-content">
-                <div class="course-content-inner">
-                    <ul>
-                        <li>Electrical laboratory safety</li>
-                        <li>Electrical measuring instruments</li>
-                        <li>Measurement of voltage, current and resistance</li>
-                        <li>Series and parallel circuit experiments</li>
-                        <li>Verification of Ohm's Law and Kirchhoff's Laws</li>
-                        <li>Capacitor charging and discharging</li>
-                        <li>Basic electrical installation practices</li>
-                        <li>Testing, fault finding and electrical protection</li>
-                    </ul>
-                </div>
-            </div>
-        </div>
-
+        <div id="courseList"></div>
     </div>
 
-    <script src="app.js"></script>
+    <script src="js/app.js"></script>
     <script>
-        // Accordion Animation Logic
-        function toggleCard(headerElement) {
-            const card = headerElement.parentElement;
-            const content = card.querySelector('.course-content');
-            
-            // If the card is already open, close it
-            if (card.classList.contains('active')) {
-                card.classList.remove('active');
-                content.style.maxHeight = null;
-            } else {
-                // First, close all other open cards (optional, makes it cleaner)
-                document.querySelectorAll('.course-card.active').forEach(openCard => {
-                    openCard.classList.remove('active');
-                    openCard.querySelector('.course-content').style.maxHeight = null;
-                });
+        const COURSES = [
+            {
+                code: 'ENT211', title: 'Entrepreneurship and Innovation', units: 2,
+                topics: [
+                    'Meaning and concepts of entrepreneurship',
+                    'Theories of entrepreneurship',
+                    'Characteristics and qualities of an entrepreneur',
+                    'Entrepreneurial opportunities and opportunity recognition',
+                    'Entrepreneurial/creative thinking',
+                    'Innovation and its dimensions',
+                    'Business ownership and enterprise formation',
+                    'Business planning and networking',
+                    'Entrepreneurship in Nigeria and e-commerce'
+                ]
+            },
+            {
+                code: 'GET201', title: 'Applied Electricity I', units: 3,
+                topics: [
+                    'Basic electrical quantities and units',
+                    'Electrical circuit components',
+                    "Ohm's Law",
+                    'Series and parallel circuits',
+                    "Kirchhoff's Current and Voltage Laws",
+                    'Network/circuit analysis',
+                    'Capacitors and inductors',
+                    'Electrical measuring instruments',
+                    'Magnetic circuits and electromagnetic principles'
+                ]
+            },
+            {
+                code: 'GET203', title: 'Engineering Graphics and Solid Modeling II', units: 2,
+                topics: [
+                    'Orthographic projection',
+                    'Isometric and oblique drawings',
+                    'Sectional views',
+                    'Auxiliary views',
+                    'Dimensioning and tolerances',
+                    'Intersections and developments',
+                    'Assembly drawings',
+                    '3D solid modelling',
+                    'CAD principles and applications'
+                ]
+            },
+            {
+                code: 'GET205', title: 'Fundamentals of Fluid Mechanics', units: 3,
+                topics: [
+                    'Properties of fluids',
+                    'Fluid pressure and pressure measurement',
+                    'Hydrostatics',
+                    'Fluid kinematics',
+                    'Continuity equation',
+                    "Bernoulli's equation",
+                    'Fluid flow in pipes',
+                    'Dimensional analysis and similitude',
+                    'Hydraulic machines'
+                ]
+            },
+            {
+                code: 'GET207', title: 'Applied Mechanics', units: 3,
+                topics: [
+                    'Fundamental concepts of mechanics',
+                    'Force systems',
+                    'Moments and couples',
+                    'Resultant forces',
+                    'Equilibrium of particles',
+                    'Equilibrium of rigid bodies',
+                    'Friction',
+                    'Centroids and centres of gravity',
+                    'Kinematics and dynamics'
+                ]
+            },
+            {
+                code: 'GET209', title: 'Engineering Mathematics I', units: 3,
+                topics: [
+                    'Algebra and functions',
+                    'Complex numbers',
+                    'Matrices and determinants',
+                    'Vectors',
+                    'Differentiation & Applications of differentiation',
+                    'Integration & Applications of integration',
+                    'Differential equations'
+                ]
+            },
+            {
+                code: 'GET211', title: 'Computing and Software Engineering', units: 3,
+                topics: [
+                    'Introduction to computers and computing',
+                    'Computer hardware and software',
+                    'Number systems and data representation',
+                    'Algorithms and flowcharts',
+                    'Programming fundamentals (Variables, data types, operators)',
+                    'Control structures (selection and loops)',
+                    'Functions, arrays and data structures',
+                    'Software engineering principles and development'
+                ]
+            },
+            {
+                code: 'OOU-EEE201', title: 'Electrical Laboratory and Installation I', units: 1,
+                topics: [
+                    'Electrical laboratory safety',
+                    'Electrical measuring instruments',
+                    'Measurement of voltage, current and resistance',
+                    'Series and parallel circuit experiments',
+                    "Verification of Ohm's Law and Kirchhoff's Laws",
+                    'Capacitor charging and discharging',
+                    'Basic electrical installation practices',
+                    'Testing, fault finding and electrical protection'
+                ]
+            }
+        ];
 
-                // Then open the clicked one
+        function courseCardHtml({ code, title, units, topics }, index) {
+            return `
+                <div class="course-card" style="animation-delay: ${index * 0.04}s;">
+                    <div class="course-header">
+                        <h3>${code} — ${title} <span class="unit-badge">${units} ${units === 1 ? 'Unit' : 'Units'}</span></h3>
+                        <i class="fas fa-chevron-down chevron"></i>
+                    </div>
+                    <div class="course-content">
+                        <div class="course-content-inner">
+                            <ul>${topics.map((topic) => `<li>${topic}</li>`).join('')}</ul>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        // Accordion: opening one course closes whichever was open before.
+        function toggleCourse(card) {
+            const wasOpen = card.classList.contains('active');
+
+            document.querySelectorAll('.course-card.active').forEach((openCard) => {
+                openCard.classList.remove('active');
+                openCard.querySelector('.course-content').style.maxHeight = null;
+            });
+
+            if (!wasOpen) {
+                const content = card.querySelector('.course-content');
                 card.classList.add('active');
-                content.style.maxHeight = content.scrollHeight + "px";
+                content.style.maxHeight = content.scrollHeight + 'px';
             }
         }
+
+        const courseList = document.getElementById('courseList');
+        courseList.innerHTML = COURSES.map(courseCardHtml).join('');
+        courseList.addEventListener('click', (event) => {
+            const header = event.target.closest('.course-header');
+            if (header) toggleCourse(header.parentElement);
+        });
     </script>
 </body>
 </html>

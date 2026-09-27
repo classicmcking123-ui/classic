@@ -7,89 +7,72 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#ff416c">
-    <!-- Firebase (Auth + Firestore) -->
     <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
-    <script src="firebase-config.js"></script>
-    <script src="idle-timeout.js"></script>
-    <script src="quiz-questions.js"></script>
-    <script src="register-sw.js"></script>
+    <script src="js/firebase-config.js"></script>
+    <script src="js/register-sw.js"></script>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
         body { background: radial-gradient(circle at 20% 0%, #23232d 0%, #16161a 45%, #101012 100%); color: #ffffff; min-height: 100vh; display: flex; flex-direction: column; overflow-x: hidden; }
 
-        /* Light Mode Variables */
-        body.light-mode { background: #f4f4f9; color: #333; }
-        .light-mode .match-header { background-color: #fff; border-bottom-color: #ddd; }
-        .light-mode .player-card { background-color: #f9f9f9; border-color: #eee; }
-        .light-mode .player-name { color: #222; }
-        .light-mode .question-box { background-color: #fff; color: #111; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
-
-        /* Top Navigation (Minimal for focus) */
+        /* Minimal header so the match has the player's full attention */
         .match-header { background: rgba(13,13,15,0.85); backdrop-filter: blur(12px); padding: 15px 40px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(255,255,255,0.06); }
         .room-code { font-family: monospace; font-size: 16px; letter-spacing: 2px; color: #aaa; background: rgba(255,255,255,0.05); padding: 6px 15px; border-radius: 8px; border: 1px dashed rgba(255,255,255,0.15); }
         .leave-btn { background: linear-gradient(135deg, #ff4b2b, #ff416c); color: #fff; text-decoration: none; padding: 9px 18px; border-radius: 20px; font-size: 13px; font-weight: 700; transition: 0.2s; border: none; cursor: pointer; box-shadow: 0 4px 14px rgba(255,65,108,0.3); }
         .leave-btn:hover { transform: translateY(-1px); }
+        a.leave-btn { display: inline-block; }
 
         /* Scoreboard */
         .scoreboard { display: flex; justify-content: space-between; align-items: center; padding: 24px 40px; max-width: 1000px; margin: 0 auto; width: 100%; }
-
         .player-card { display: flex; align-items: center; gap: 15px; background: linear-gradient(165deg, #212127, #1a1a1f); padding: 10px 20px; border-radius: 50px; border: 1px solid rgba(255,255,255,0.08); box-shadow: 0 8px 20px rgba(0,0,0,0.3); min-width: 200px; }
+        .player-card.opponent { flex-direction: row-reverse; text-align: right; }
         .avatar { width: 42px; height: 42px; border-radius: 50%; display: flex; justify-content: center; align-items: center; font-size: 16px; font-weight: 800; flex-shrink: 0; box-shadow: 0 2px 8px rgba(0,0,0,0.3); }
         .player-1-avatar { background: linear-gradient(145deg, #00c3ff, #0077a8); color: #001a24; }
         .player-2-avatar { background: linear-gradient(145deg, #ff416c, #a8002f); color: #fff; }
-
         .player-info { display: flex; flex-direction: column; }
         .player-name { font-weight: 700; font-size: 15px; }
         .player-score { font-size: 20px; font-weight: 900; color: #25D366; }
-
         .vs-badge { font-size: 22px; font-weight: 900; font-style: italic; color: #666; }
 
-        /* Timer Bar */
         .timer-container { width: 100%; height: 8px; background: rgba(255,255,255,0.06); }
         .timer-bar { height: 100%; width: 100%; background: #25D366; transition: width 0.2s linear, background-color 0.3s; }
 
-        /* Arena Area */
         .arena { flex: 1; display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 20px 40px; max-width: 1000px; margin: 0 auto; width: 100%; }
-
         .question-box { background: linear-gradient(165deg, #202027, #1a1a1f); padding: 40px; border-radius: 16px; text-align: center; width: 100%; margin-bottom: 30px; border-top: 4px solid #ffb300; font-size: 26px; font-weight: 700; line-height: 1.4; box-shadow: 0 16px 40px rgba(0,0,0,0.35); }
         .question-progress { width: 100%; text-align: center; margin-bottom: 14px; font-size: 13px; font-weight: 700; letter-spacing: 0.5px; color: #888; min-height: 16px; }
-        .light-mode .question-progress { color: #666; }
 
-        /* 2x2 Answer Grid */
-        .answers-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; width: 100%; }
-
+        /* Kahoot-style 2x2 answer grid */
+        .answers-grid { display: none; grid-template-columns: 1fr 1fr; gap: 18px; width: 100%; }
         .answer-btn { padding: 28px 20px; border: none; border-radius: 12px; font-size: 20px; font-weight: 700; color: white; cursor: pointer; transition: transform 0.1s, filter 0.2s, box-shadow 0.2s; display: flex; align-items: center; gap: 15px; box-shadow: 0 6px 0 rgba(0,0,0,0.25), 0 10px 24px rgba(0,0,0,0.2); }
         .answer-btn:active { transform: translateY(4px); box-shadow: 0 2px 0 rgba(0,0,0,0.25); }
         .answer-btn:hover { filter: brightness(1.1); }
-
-        /* Kahoot-style colors */
         .ans-red { background: linear-gradient(160deg, #ec3856, #c11334); }
         .ans-blue { background: linear-gradient(160deg, #2f7ce0, #0f52a3); }
         .ans-yellow { background: linear-gradient(160deg, #f0af1a, #a87b00); }
         .ans-green { background: linear-gradient(160deg, #38ab19, #1e6b0a); }
-
         .shape-icon { font-size: 26px; opacity: 0.85; }
+        .shape-icon.fa-play { transform: rotate(-90deg); }
 
         .result-screen { text-align: center; }
         .result-title { font-size: 34px; font-weight: 900; margin-bottom: 16px; }
         .result-scores { font-size: 16px; color: #aaa; margin-bottom: 24px; }
 
-        /* --- Mobile: the header and scoreboard overflow horizontally at fixed desktop sizes,
-           so wrap the header and stack the two player cards instead of side-by-side --- */
+        body.light-mode { background: #f4f4f9; color: #333; }
+        .light-mode .match-header { background-color: #fff; border-bottom-color: #ddd; }
+        .light-mode .player-card { background-color: #f9f9f9; border-color: #eee; }
+        .light-mode .player-name { color: #222; }
+        .light-mode .question-box { background-color: #fff; color: #111; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
+        .light-mode .question-progress { color: #666; }
+
+        /* Mobile: wrap the header and stack the player cards instead of side by side */
         @media (max-width: 700px) {
             .match-header { flex-wrap: wrap; gap: 10px; padding: 12px 20px; }
             .room-code { font-size: 13px; padding: 5px 10px; }
             .leave-btn { padding: 8px 14px; font-size: 12px; }
 
             .scoreboard { flex-direction: column; gap: 12px; padding: 18px 20px; }
-            .player-card, .player-card[style] {
-                width: 100%;
-                min-width: 0;
-                flex-direction: row !important;
-                text-align: left !important;
-            }
+            .player-card, .player-card.opponent { width: 100%; min-width: 0; flex-direction: row; text-align: left; }
             .vs-badge { display: none; }
 
             .arena { padding: 16px 20px; }
@@ -99,186 +82,144 @@
     </style>
 </head>
 <body>
-
-    <!-- Header & Leave Button -->
     <div class="match-header">
         <div class="logo">StudyHive <i class="fab fa-hive"></i></div>
         <div class="room-code">ROOM: <span id="displayRoomCode">...</span></div>
-        <button class="leave-btn" onclick="leaveMatch()">Leave Match</button>
+        <button class="leave-btn" id="leaveMatchBtn">Leave Match</button>
     </div>
 
-    <!-- Live Scoreboard -->
     <div class="scoreboard">
         <div class="player-card">
             <div class="avatar player-1-avatar" id="myAvatar"></div>
             <div class="player-info">
                 <span class="player-name" id="myPlayerName">You</span>
-                <span class="player-score" id="score1">0</span>
+                <span class="player-score" id="myScore">0</span>
             </div>
         </div>
 
         <div class="vs-badge">VS</div>
 
-        <div class="player-card" style="flex-direction: row-reverse; text-align: right;">
+        <div class="player-card opponent">
             <div class="avatar player-2-avatar" id="oppAvatar"><i class="fas fa-user-ninja"></i></div>
             <div class="player-info">
                 <span class="player-name" id="oppPlayerName">Waiting...</span>
-                <span class="player-score" id="score2">0</span>
+                <span class="player-score" id="oppScore">0</span>
             </div>
         </div>
     </div>
 
-    <!-- Progress Timer -->
-    <div class="timer-container">
+    <div class="timer-container" id="timerContainer">
         <div class="timer-bar" id="timerBar"></div>
     </div>
 
-    <!-- The Battlefield -->
     <div class="arena" id="arena">
-
         <div class="question-progress" id="questionProgress"></div>
         <div class="question-box" id="questionBox">Setting up your match...</div>
 
-        <!-- Kahoot Style Buttons -->
-        <div class="answers-grid" id="answersGrid" style="display: none;">
-            <button class="answer-btn ans-red">
-                <i class="fas fa-play shape-icon" style="transform: rotate(-90deg);"></i> <span class="answer-text"></span>
-            </button>
-            <button class="answer-btn ans-blue">
-                <i class="fas fa-square shape-icon"></i> <span class="answer-text"></span>
-            </button>
-            <button class="answer-btn ans-yellow">
-                <i class="fas fa-circle shape-icon"></i> <span class="answer-text"></span>
-            </button>
-            <button class="answer-btn ans-green">
-                <i class="fas fa-star shape-icon"></i> <span class="answer-text"></span>
-            </button>
+        <div class="answers-grid" id="answersGrid">
+            <button class="answer-btn ans-red"><i class="fas fa-play shape-icon"></i> <span class="answer-text"></span></button>
+            <button class="answer-btn ans-blue"><i class="fas fa-square shape-icon"></i> <span class="answer-text"></span></button>
+            <button class="answer-btn ans-yellow"><i class="fas fa-circle shape-icon"></i> <span class="answer-text"></span></button>
+            <button class="answer-btn ans-green"><i class="fas fa-star shape-icon"></i> <span class="answer-text"></span></button>
         </div>
-
     </div>
 
-    <script src="app.js"></script>
+    <script src="js/quiz-questions.js"></script>
+    <script src="js/quiz.js"></script>
+    <script src="js/utils.js"></script>
+    <script src="js/app.js"></script>
     <script>
-        function escapeHtml(str) {
-            const div = document.createElement('div');
-            div.textContent = str == null ? '' : String(str);
-            return div.innerHTML;
-        }
-
-        const AVATAR_COLORS = ['#ff416c', '#25D366', '#00c3ff', '#ffb300', '#8e44ad', '#e67e22'];
-        function colorForEmail(email) {
-            let hash = 0;
-            const key = email || '';
-            for (let i = 0; i < key.length; i++) hash = key.charCodeAt(i) + ((hash << 5) - hash);
-            return AVATAR_COLORS[Math.abs(hash) % AVATAR_COLORS.length];
-        }
-        function initialsFor(name, email) {
-            const source = (name || email || '?').trim();
-            return source.split(/\s+/).map(w => w[0]).slice(0, 2).join('').toUpperCase() || '?';
-        }
-
-        // --- 1. Identify the Player ---
-        // requireAuth() redirects signed-out visitors, but that navigation is async - the
-        // rest of this script still runs for a moment, so these fall back safely rather
-        // than dereferencing a null userData.
-        const userData = requireAuth();
-        const myEmail = userData ? userData.email : null;
-        const myName = userData ? (userData.name || userData.email) : 'Student';
-
-        document.getElementById('myAvatar').textContent = initialsFor(myName, myEmail);
-        document.getElementById('myAvatar').style.background = `linear-gradient(145deg, ${colorForEmail(myEmail)}, #16161a)`;
-        document.getElementById('myPlayerName').textContent = myName + ' (You)';
-
         const QUESTIONS_PER_MATCH = 8;
-        const QUESTION_DURATION = 15; // seconds
+        const QUESTION_SECONDS = 15;
+        const POINTS_PER_CORRECT_ANSWER = 100;
+        // Waiting rooms nobody joined within this window are treated as abandoned
+        const STALE_WAITING_ROOM_MS = 2 * 60 * 1000;
+        // The host advances the question on timeout; the other player steps in only after this
+        // grace period, so a host who closed their tab doesn't stall the match.
+        const GUEST_TIMEOUT_GRACE_SECONDS = 3;
 
-        const urlParams = new URLSearchParams(window.location.search);
-        const requestedRoom = urlParams.get('room');
-        const requestedCourse = urlParams.get('course') || 'Mixed';
+        const user = requireAuth();
+        const me = user ? { email: user.email, name: user.name || user.email } : null;
 
+        const params = new URLSearchParams(window.location.search);
+        const requestedRoom = params.get('room');
+        const requestedCourse = params.get('course') || 'Mixed';
+
+        const questionBox = document.getElementById('questionBox');
+        const questionProgress = document.getElementById('questionProgress');
+        const answersGrid = document.getElementById('answersGrid');
+        const timerBar = document.getElementById('timerBar');
+        const answerButtons = Array.from(document.querySelectorAll('.answer-btn'));
+
+        // Match state. Room players are stored as [A, B]; the room creator is A and hosts the match.
         let roomCode = null;
-        let mySlot = null; // 'A' or 'B'
-        let isHost = false;
+        let mySlot = null;
+        let roomStatus = 'waiting';
         let currentQuestionIndex = -1;
-        let myAnsweredThisQuestion = false;
-        let currentQuestionData = null;
+        let currentQuestion = null;
+        let hasAnswered = false;
         let timerInterval = null;
-        let advancing = false;
+        let isAdvancing = false;
 
-        function pickRandomQuestions(count) {
-            const pool = [...QUIZ_QUESTION_BANK];
-            for (let i = pool.length - 1; i > 0; i--) {
-                const j = Math.floor(Math.random() * (i + 1));
-                [pool[i], pool[j]] = [pool[j], pool[i]];
-            }
-            return pool.slice(0, Math.min(count, pool.length));
+        const isHost = () => mySlot === 'A';
+        const roomRef = () => db.collection('quizRooms').doc(roomCode);
+
+        function playersBySlot(room) {
+            const [playerA, playerB] = room.players;
+            return mySlot === 'A'
+                ? { mine: playerA, opponent: playerB, myScore: room.scores.A, opponentScore: room.scores.B }
+                : { mine: playerB, opponent: playerA, myScore: room.scores.B, opponentScore: room.scores.A };
         }
 
-        // --- 2. Join or Create the Room ---
-        async function joinOrCreateNamedRoom(code) {
-            const roomRef = db.collection('quizRooms').doc(code);
-            await db.runTransaction(async (tx) => {
-                const doc = await tx.get(roomRef);
-
-                if (!doc.exists) {
-                    mySlot = 'A';
-                    isHost = true;
-                    lastKnownStatus = 'waiting';
-                    tx.set(roomRef, {
-                        status: 'waiting',
-                        mode: 'custom',
-                        course: requestedCourse,
-                        players: [{ email: myEmail, name: myName }],
-                        scores: { A: 0, B: 0 },
-                        questions: pickRandomQuestions(QUESTIONS_PER_MATCH),
-                        currentQuestionIndex: -1,
-                        currentAnswers: { A: null, B: null },
-                        questionStartedAt: null,
-                        createdAt: firebase.firestore.FieldValue.serverTimestamp(),
-                        createdBy: myEmail
-                    });
-                    return;
-                }
-
-                const data = doc.data();
-                if (data.players.some(p => p.email === myEmail)) {
-                    mySlot = data.players[0].email === myEmail ? 'A' : 'B';
-                    isHost = mySlot === 'A';
-                    lastKnownStatus = data.status;
-                    return;
-                }
-                if (data.players.length >= 2) {
-                    throw new Error('This room is already full.');
-                }
-
-                mySlot = 'B';
-                isHost = false;
-                lastKnownStatus = 'active';
-                tx.update(roomRef, {
-                    players: [...data.players, { email: myEmail, name: myName }],
-                    status: 'active',
-                    currentQuestionIndex: 0,
-                    questionStartedAt: firebase.firestore.FieldValue.serverTimestamp()
-                });
+        // --- Joining ---
+        function joinAsSecondPlayer(tx, ref, room) {
+            mySlot = 'B';
+            roomStatus = 'active';
+            tx.update(ref, {
+                players: [...room.players, me],
+                status: 'active',
+                currentQuestionIndex: 0,
+                questionStartedAt: firebase.firestore.FieldValue.serverTimestamp()
             });
         }
 
-        const STALE_WAITING_ROOM_MS = 2 * 60 * 1000; // rooms nobody joined in 2 minutes are assumed abandoned
+        async function joinOrCreateNamedRoom() {
+            const ref = roomRef();
+            await db.runTransaction(async (tx) => {
+                const doc = await tx.get(ref);
+
+                if (!doc.exists) {
+                    mySlot = 'A';
+                    roomStatus = 'waiting';
+                    tx.set(ref, newQuizRoom({ mode: 'custom', course: requestedCourse, questionCount: QUESTIONS_PER_MATCH, player: me }));
+                    return;
+                }
+
+                const room = doc.data();
+                const existingIndex = room.players.findIndex((player) => player.email === me.email);
+                if (existingIndex !== -1) {
+                    mySlot = existingIndex === 0 ? 'A' : 'B';
+                    roomStatus = room.status;
+                    return;
+                }
+                if (room.players.length >= 2) throw new Error('This room is already full.');
+
+                joinAsSecondPlayer(tx, ref, room);
+            });
+        }
 
         async function findOrCreateRandomRoom() {
-            const waitingSnap = await db.collection('quizRooms')
+            const waiting = await db.collection('quizRooms')
                 .where('mode', '==', 'random')
                 .where('status', '==', 'waiting')
                 .limit(5)
                 .get();
 
-            for (const doc of waitingSnap.docs) {
-                const data = doc.data();
-                if (data.createdBy === myEmail) continue;
+            for (const doc of waiting.docs) {
+                const room = doc.data();
+                if (room.createdBy === me.email) continue;
 
-                // Skip (and clean up) rooms that have been waiting so long the creator has likely left -
-                // otherwise a matchmaking hit could pair you with someone who's already gone.
-                const createdMs = data.createdAt ? data.createdAt.toMillis() : 0;
+                const createdMs = room.createdAt ? room.createdAt.toMillis() : 0;
                 if (Date.now() - createdMs > STALE_WAITING_ROOM_MS) {
                     doc.ref.delete().catch(() => {});
                     continue;
@@ -286,59 +227,28 @@
 
                 try {
                     await db.runTransaction(async (tx) => {
-                        const fresh = await tx.get(doc.ref);
-                        const freshData = fresh.data();
-                        if (freshData.status !== 'waiting' || freshData.players.length >= 2) {
-                            throw new Error('TAKEN');
-                        }
-                        mySlot = 'B';
-                        isHost = false;
-                        lastKnownStatus = 'active';
-                        tx.update(doc.ref, {
-                            players: [...freshData.players, { email: myEmail, name: myName }],
-                            status: 'active',
-                            currentQuestionIndex: 0,
-                            questionStartedAt: firebase.firestore.FieldValue.serverTimestamp()
-                        });
+                        const fresh = (await tx.get(doc.ref)).data();
+                        if (fresh.status !== 'waiting' || fresh.players.length >= 2) throw new Error('Room already taken');
+                        joinAsSecondPlayer(tx, doc.ref, fresh);
                     });
                     roomCode = doc.id;
                     return;
-                } catch (e) {
-                    continue; // someone else claimed it first - try the next candidate
+                } catch {
+                    // Someone else claimed it first; try the next candidate
                 }
             }
 
-            // Nobody waiting right now - open a new room and wait for an opponent
-            roomCode = 'RND-' + Math.random().toString(36).slice(2, 7).toUpperCase();
+            roomCode = 'RND-' + createRoomCode(5);
             mySlot = 'A';
-            isHost = true;
-            lastKnownStatus = 'waiting';
-            await db.collection('quizRooms').doc(roomCode).set({
-                status: 'waiting',
-                mode: 'random',
-                course: 'Mixed',
-                players: [{ email: myEmail, name: myName }],
-                scores: { A: 0, B: 0 },
-                questions: pickRandomQuestions(QUESTIONS_PER_MATCH),
-                currentQuestionIndex: -1,
-                currentAnswers: { A: null, B: null },
-                questionStartedAt: null,
-                createdAt: firebase.firestore.FieldValue.serverTimestamp(),
-                createdBy: myEmail
-            });
+            roomStatus = 'waiting';
+            await roomRef().set(newQuizRoom({ mode: 'random', course: 'Mixed', questionCount: QUESTIONS_PER_MATCH, player: me }));
         }
 
-        // --- 3. Game Loop ---
-        const questionBox = document.getElementById('questionBox');
-        const questionProgress = document.getElementById('questionProgress');
-        const answersGrid = document.getElementById('answersGrid');
-        const timerBar = document.getElementById('timerBar');
-        const answerButtons = Array.from(document.querySelectorAll('.answer-btn'));
-
-        function renderQuestion(q, index, total) {
-            currentQuestionData = q;
-            myAnsweredThisQuestion = false;
-            questionBox.textContent = q.question;
+        // --- Questions & answers ---
+        function renderQuestion(question, index, total) {
+            currentQuestion = question;
+            hasAnswered = false;
+            questionBox.textContent = question.question;
             questionBox.style.color = '';
             answersGrid.style.display = 'grid';
 
@@ -346,28 +256,29 @@
             questionProgress.textContent = `QUESTION ${index + 1} OF ${total}` +
                 (remaining > 0 ? ` · ${remaining} LEFT AFTER THIS` : ' · FINAL QUESTION');
 
-            answerButtons.forEach((btn, i) => {
-                btn.querySelector('.answer-text').textContent = q.options[i];
-                btn.style.opacity = '1';
-                btn.style.pointerEvents = 'auto';
-                btn.style.boxShadow = '';
-                btn.onclick = () => selectAnswer(btn, i);
+            answerButtons.forEach((button, i) => {
+                button.querySelector('.answer-text').textContent = question.options[i];
+                button.style.opacity = '1';
+                button.style.pointerEvents = 'auto';
+                button.style.boxShadow = '';
+                button.onclick = () => selectAnswer(button, i);
             });
         }
 
-        async function selectAnswer(btnElement, optionIndex) {
-            if (myAnsweredThisQuestion || !currentQuestionData) return;
-            myAnsweredThisQuestion = true;
+        async function selectAnswer(button, optionIndex) {
+            if (hasAnswered || !currentQuestion) return;
+            hasAnswered = true;
 
-            answerButtons.forEach(btn => { btn.style.pointerEvents = 'none'; btn.style.opacity = '0.45'; });
-            btnElement.style.opacity = '1';
-            const isCorrect = optionIndex === currentQuestionData.correctIndex;
-            btnElement.style.boxShadow = isCorrect
-                ? '0 0 0 3px #25D366, 0 6px 0 rgba(0,0,0,0.25)'
-                : '0 0 0 3px #ff4b2b, 0 6px 0 rgba(0,0,0,0.25)';
+            answerButtons.forEach((other) => {
+                other.style.pointerEvents = 'none';
+                other.style.opacity = '0.45';
+            });
+            const ringColor = optionIndex === currentQuestion.correctIndex ? '#25D366' : '#ff4b2b';
+            button.style.opacity = '1';
+            button.style.boxShadow = `0 0 0 3px ${ringColor}, 0 6px 0 rgba(0,0,0,0.25)`;
 
             try {
-                await db.collection('quizRooms').doc(roomCode).update({
+                await roomRef().update({
                     ['currentAnswers.' + mySlot]: { answerIndex: optionIndex, answeredAt: firebase.firestore.FieldValue.serverTimestamp() }
                 });
             } catch (error) {
@@ -375,54 +286,54 @@
             }
         }
 
-        function startClientTimer(questionStartedAt) {
+        function startTimer(questionStartedAt) {
             clearInterval(timerInterval);
             if (!questionStartedAt) return;
+
             const startMs = questionStartedAt.toMillis();
-            const expectedIndex = currentQuestionIndex;
-            // The room creator gets first crack at advancing on timeout; the other player only
-            // steps in after a short grace window, so a stalled/closed host doesn't stall the match.
-            const timeoutGraceSeconds = isHost ? 0 : 3;
+            const questionIndex = currentQuestionIndex;
+            const timeoutSeconds = QUESTION_SECONDS + (isHost() ? 0 : GUEST_TIMEOUT_GRACE_SECONDS);
 
             timerInterval = setInterval(() => {
                 const elapsed = (Date.now() - startMs) / 1000;
-                const remaining = Math.max(0, QUESTION_DURATION - elapsed);
-                const pct = (remaining / QUESTION_DURATION) * 100;
-                timerBar.style.width = pct + '%';
+                const remaining = Math.max(0, QUESTION_SECONDS - elapsed);
+                timerBar.style.width = (remaining / QUESTION_SECONDS) * 100 + '%';
                 timerBar.style.backgroundColor = remaining <= 5 ? '#ff4b2b' : remaining <= 10 ? '#ffb300' : '#25D366';
 
-                if (elapsed >= QUESTION_DURATION + timeoutGraceSeconds) {
+                if (elapsed >= timeoutSeconds) {
                     clearInterval(timerInterval);
-                    attemptAdvance(expectedIndex);
+                    advanceQuestion(questionIndex);
                 }
             }, 200);
         }
 
-        // Transactional so it's safe for BOTH players to attempt this at once (e.g. both just
-        // answered, or the room creator's tab closed and the other player's grace window kicked in) -
-        // whichever attempt lands first wins, the other reads the already-changed state and no-ops.
-        async function attemptAdvance(expectedIndex) {
-            if (advancing) return;
-            advancing = true;
+        // Scores the current question and moves on. Both players may call this at the same time
+        // (both answered, or the guest's timeout fired), so it runs in a transaction and does
+        // nothing if the room has already moved past `expectedIndex`.
+        async function advanceQuestion(expectedIndex) {
+            if (isAdvancing) return;
+            isAdvancing = true;
             try {
                 await db.runTransaction(async (tx) => {
-                    const roomRef = db.collection('quizRooms').doc(roomCode);
-                    const snap = await tx.get(roomRef);
-                    if (!snap.exists) return;
-                    const room = snap.data();
+                    const ref = roomRef();
+                    const snapshot = await tx.get(ref);
+                    if (!snapshot.exists) return;
+                    const room = snapshot.data();
                     if (room.status !== 'active' || room.currentQuestionIndex !== expectedIndex) return;
 
-                    const q = room.questions[room.currentQuestionIndex];
-                    const scores = { A: room.scores.A || 0, B: room.scores.B || 0 };
-                    if (room.currentAnswers.A && room.currentAnswers.A.answerIndex === q.correctIndex) scores.A += 100;
-                    if (room.currentAnswers.B && room.currentAnswers.B.answerIndex === q.correctIndex) scores.B += 100;
+                    const { correctIndex } = room.questions[room.currentQuestionIndex];
+                    const answeredCorrectly = (slot) => room.currentAnswers[slot]?.answerIndex === correctIndex;
+                    const scores = {
+                        A: (room.scores.A || 0) + (answeredCorrectly('A') ? POINTS_PER_CORRECT_ANSWER : 0),
+                        B: (room.scores.B || 0) + (answeredCorrectly('B') ? POINTS_PER_CORRECT_ANSWER : 0)
+                    };
 
                     const nextIndex = room.currentQuestionIndex + 1;
                     if (nextIndex >= room.questions.length) {
-                        tx.update(roomRef, { scores: scores, status: 'finished' });
+                        tx.update(ref, { scores, status: 'finished' });
                     } else {
-                        tx.update(roomRef, {
-                            scores: scores,
+                        tx.update(ref, {
+                            scores,
                             currentQuestionIndex: nextIndex,
                             currentAnswers: { A: null, B: null },
                             questionStartedAt: firebase.firestore.FieldValue.serverTimestamp()
@@ -432,70 +343,61 @@
             } catch (error) {
                 console.error('Failed to advance question', error);
             } finally {
-                advancing = false;
+                isAdvancing = false;
             }
+        }
+
+        // --- End screens ---
+        function showEndScreen(title, color, details) {
+            clearInterval(timerInterval);
+            document.getElementById('arena').innerHTML = `
+                <div class="question-box result-screen" style="border-top-color: ${color};">
+                    <div class="result-title" style="color: ${color};">${title}</div>
+                    <div class="result-scores">${details}</div>
+                    <a href="quiz_arena.html" class="leave-btn">Back to Arena</a>
+                </div>
+            `;
+            document.getElementById('timerContainer').style.display = 'none';
         }
 
         function showFinalResults(room) {
-            clearInterval(timerInterval);
-            const myScore = mySlot === 'A' ? room.scores.A : room.scores.B;
-            const oppScore = mySlot === 'A' ? room.scores.B : room.scores.A;
-            const oppPlayer = mySlot === 'A' ? room.players[1] : room.players[0];
-            const oppName = oppPlayer ? oppPlayer.name : 'Opponent';
+            const { opponent, myScore, opponentScore } = playersBySlot(room);
+            const opponentName = escapeHtml(opponent ? opponent.name : 'Opponent');
+            const scoreLine = `You: ${myScore} &nbsp;|&nbsp; ${opponentName}: ${opponentScore}`;
 
-            let resultText, resultColor;
-            if (myScore > oppScore) { resultText = 'You Won! 🎉'; resultColor = '#25D366'; }
-            else if (myScore < oppScore) { resultText = 'You Lost'; resultColor = '#ff4b2b'; }
-            else { resultText = "It's a Draw!"; resultColor = '#ffb300'; }
-
-            document.getElementById('arena').innerHTML = `
-                <div class="question-box result-screen" style="border-top-color: ${resultColor};">
-                    <div class="result-title" style="color: ${resultColor};">${resultText}</div>
-                    <div class="result-scores">You: ${myScore} &nbsp;|&nbsp; ${escapeHtml(oppName)}: ${oppScore}</div>
-                    <a href="quiz_arena.html" class="leave-btn" style="text-decoration: none; display: inline-block;">Back to Arena</a>
-                </div>
-            `;
-            document.querySelector('.timer-container').style.display = 'none';
+            if (myScore > opponentScore) showEndScreen('You Won! 🎉', '#25D366', scoreLine);
+            else if (myScore < opponentScore) showEndScreen('You Lost', '#ff4b2b', scoreLine);
+            else showEndScreen("It's a Draw!", '#ffb300', scoreLine);
         }
 
         function showAbandonedScreen(room) {
-            clearInterval(timerInterval);
-            const leftPlayer = room.players.find(p => p.email === room.leftBy);
-            const leftName = leftPlayer ? leftPlayer.name : 'Your opponent';
-            const iLeft = room.leftBy === myEmail;
-
-            document.getElementById('arena').innerHTML = `
-                <div class="question-box result-screen" style="border-top-color: #ffb300;">
-                    <div class="result-title" style="color: #ffb300;">Opponent Left</div>
-                    <div class="result-scores">${escapeHtml(leftName)} left the match.${iLeft ? '' : ' You win by forfeit! 🏆'}</div>
-                    <a href="quiz_arena.html" class="leave-btn" style="text-decoration: none; display: inline-block;">Back to Arena</a>
-                </div>
-            `;
-            document.querySelector('.timer-container').style.display = 'none';
+            const leaver = room.players.find((player) => player.email === room.leftBy);
+            const leaverName = escapeHtml(leaver ? leaver.name : 'Your opponent');
+            const forfeitNote = room.leftBy === me.email ? '' : ' You win by forfeit! 🏆';
+            showEndScreen('Opponent Left', '#ffb300', `${leaverName} left the match.${forfeitNote}`);
         }
 
-        let lastKnownStatus = 'waiting';
-
-        function renderRoomState(room) {
-            lastKnownStatus = room.status;
-            const me = mySlot === 'A' ? room.players[0] : room.players[1];
-            const opponent = mySlot === 'A' ? room.players[1] : room.players[0];
-
-            document.getElementById('myPlayerName').textContent = (me ? me.name : myName) + ' (You)';
-            document.getElementById('score1').textContent = mySlot === 'A' ? room.scores.A : room.scores.B;
-            document.getElementById('score2').textContent = mySlot === 'A' ? room.scores.B : room.scores.A;
+        // --- Rendering room updates ---
+        function renderScoreboard(room) {
+            const { mine, opponent, myScore, opponentScore } = playersBySlot(room);
+            document.getElementById('myPlayerName').textContent = (mine ? mine.name : me.name) + ' (You)';
+            document.getElementById('myScore').textContent = myScore;
+            document.getElementById('oppScore').textContent = opponentScore;
 
             if (opponent) {
+                const opponentAvatar = document.getElementById('oppAvatar');
                 document.getElementById('oppPlayerName').textContent = opponent.name;
-                const oppAvatar = document.getElementById('oppAvatar');
-                oppAvatar.textContent = initialsFor(opponent.name, opponent.email);
-                oppAvatar.style.background = `linear-gradient(145deg, ${colorForEmail(opponent.email)}, #16161a)`;
+                opponentAvatar.textContent = initialsFor(opponent.name, opponent.email);
+                opponentAvatar.style.background = avatarGradient(opponent.email);
             }
+        }
 
-            if (room.status === 'abandoned') {
-                showAbandonedScreen(room);
-                return;
-            }
+        function renderRoom(room) {
+            roomStatus = room.status;
+            renderScoreboard(room);
+
+            if (room.status === 'abandoned') return showAbandonedScreen(room);
+            if (room.status === 'finished') return showFinalResults(room);
 
             if (room.status === 'waiting') {
                 questionBox.textContent = 'Waiting for an opponent to join...';
@@ -505,115 +407,66 @@
                 return;
             }
 
-            if (room.status === 'finished') {
-                showFinalResults(room);
-                return;
-            }
-
             if (room.currentQuestionIndex !== currentQuestionIndex) {
                 currentQuestionIndex = room.currentQuestionIndex;
                 renderQuestion(room.questions[currentQuestionIndex], currentQuestionIndex, room.questions.length);
-                startClientTimer(room.questionStartedAt);
+                startTimer(room.questionStartedAt);
             }
 
             if (room.currentAnswers.A && room.currentAnswers.B) {
-                attemptAdvance(room.currentQuestionIndex);
+                advanceQuestion(room.currentQuestionIndex);
             }
         }
 
-        // Run this when the quiz is over and you know who won
-async function awardXP(winnerUid) {
-    await db.collection('users').doc(winnerUid).update({
-        xp: firebase.firestore.FieldValue.increment(50) // +50 XP for a win
-    });
-}
+        // --- Leaving ---
+        // A room nobody joined is deleted so random matchmaking never finds it; an active match
+        // is marked abandoned so the opponent sees a forfeit screen.
+        function abandonRoom() {
+            if (!roomCode) return Promise.resolve();
+            if (roomStatus === 'waiting') return roomRef().delete();
+            if (roomStatus === 'active') return roomRef().update({ status: 'abandoned', leftBy: me.email });
+            return Promise.resolve();
+        }
 
-        // Pre-load sounds for instant playback
-const sfxCorrect = new Audio('assets/sounds/correct_chime.mp3');
-const sfxWrong = new Audio('assets/sounds/error_buzzer.mp3');
-const sfxWin = new Audio('assets/sounds/match_win.mp3');
-
-// When a user selects an answer:
-function handleAnswerSelection(isCorrect) {
-    if (isCorrect) {
-        sfxCorrect.currentTime = 0; // Rewind to start in case they tap fast
-        sfxCorrect.play();
-    } else {
-        sfxWrong.currentTime = 0;
-        sfxWrong.play();
-    }
-}
-
-        // --- Leaving the match ---
         async function leaveMatch() {
             try {
-                if (roomCode) {
-                    const roomRef = db.collection('quizRooms').doc(roomCode);
-                    if (lastKnownStatus === 'waiting') {
-                        // Nobody joined yet - delete outright so random matchmaking never finds a ghost room
-                        await roomRef.delete();
-                    } else if (lastKnownStatus === 'active') {
-                        await roomRef.update({ status: 'abandoned', leftBy: myEmail });
-                    }
-                }
+                await abandonRoom();
             } catch (error) {
                 console.error('Error leaving match', error);
             }
             window.location.href = 'quiz_arena.html';
         }
 
-        // Best-effort: browsers don't guarantee async work completes on tab close/refresh,
-        // but this catches the common case where the write goes out before the page unloads.
-        window.addEventListener('beforeunload', () => {
-            if (!roomCode) return;
-            const roomRef = db.collection('quizRooms').doc(roomCode);
-            if (lastKnownStatus === 'waiting') {
-                roomRef.delete().catch(() => {});
-            } else if (lastKnownStatus === 'active') {
-                roomRef.update({ status: 'abandoned', leftBy: myEmail }).catch(() => {});
-            }
-        });
+        async function startMatch() {
+            const myAvatar = document.getElementById('myAvatar');
+            myAvatar.textContent = initialsFor(me.name, me.email);
+            myAvatar.style.background = avatarGradient(me.email);
+            document.getElementById('myPlayerName').textContent = me.name + ' (You)';
+            document.getElementById('leaveMatchBtn').addEventListener('click', leaveMatch);
 
-        function listenToRoom() {
-            db.collection('quizRooms').doc(roomCode).onSnapshot((doc) => {
-                if (!doc.exists) return;
-                renderRoomState(doc.data());
+            // Best effort: browsers don't guarantee async work finishes while the tab is closing
+            window.addEventListener('beforeunload', () => {
+                abandonRoom().catch(() => {});
             });
-        }
 
-        function triggerWinScreen() {
-    // Play the win sound
-    sfxWin.play();
-    
-    // Fire the particle confetti
-    confetti({
-        particleCount: 150,
-        spread: 80,
-        origin: { y: 0.6 }, // Start slightly below the vertical center
-        colors: ['#ff416c', '#25D366', '#00c3ff'] // Match your StudyHive brand colors
-    });
-    
-    // Show your "You Win!" UI element here
-}
-
-        // --- 4. Boot ---
-        async function initMatch() {
             try {
                 if (requestedRoom) {
                     roomCode = requestedRoom.toUpperCase();
-                    await joinOrCreateNamedRoom(roomCode);
+                    await joinOrCreateNamedRoom();
                 } else {
                     await findOrCreateRandomRoom();
                 }
                 document.getElementById('displayRoomCode').textContent = roomCode;
-                listenToRoom();
+                roomRef().onSnapshot((doc) => {
+                    if (doc.exists) renderRoom(doc.data());
+                }, (error) => console.error('Lost connection to the match', error));
             } catch (error) {
                 questionBox.textContent = error.message || 'Could not join this match.';
                 questionBox.style.color = '#ff4b2b';
             }
         }
 
-        initMatch();
+        if (me) startMatch();
     </script>
 </body>
 </html>

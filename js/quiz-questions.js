@@ -1,8 +1,6 @@
-// Question bank for Quiz Arena, organized by course. Each match randomly samples a chosen
-// number of these (see the "Number of Questions" selector in Custom Room / 1v1 Challenge,
-// and QUESTIONS_PER_MATCH in live_quiz.html for Randoms). To add more, paste more objects
-// into this array in the same { question, options: [4 strings], correctIndex } shape -
-// correctIndex is the 0-based position of the right answer in options.
+// Question bank for Quiz Arena, grouped by course. Each match samples a random subset.
+// Every entry is { question, options: [4 strings], correctIndex }, where correctIndex is the
+// 0-based position of the right answer in options.
 const QUIZ_QUESTION_BANK = [
 
     // --- ENT211: Entrepreneurship & Innovation ---

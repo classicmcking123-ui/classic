@@ -1,0 +1,72 @@
+/* Base styles shared by every page that uses the standard StudyHive navbar. */
+
+* { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+
+body {
+    background-color: #1a1a1a;
+    color: #ffffff;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    transition: background-color 0.3s, color 0.3s;
+}
+body.light-mode { background-color: #f4f4f9; color: #333; }
+
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.12); border-radius: 4px; }
+::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.2); }
+.light-mode ::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.15); }
+.light-mode ::-webkit-scrollbar-thumb:hover { background: rgba(0,0,0,0.25); }
+
+/* Navbar */
+nav {
+    background: rgba(13, 13, 15, 0.85);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    padding: 18px 40px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+    position: sticky;
+    top: 0;
+    z-index: 50;
+}
+.logo {
+    font-size: 24px;
+    font-weight: 800;
+    letter-spacing: -0.3px;
+    background: linear-gradient(to right, #ff4b2b, #ff416c);
+    background-clip: text;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+.nav-links a {
+    color: #ccc;
+    text-decoration: none;
+    margin-left: 20px;
+    font-size: 14px;
+    font-weight: 500;
+    transition: color 0.2s;
+}
+.nav-links a:hover { color: #ff416c; }
+.light-mode nav { background: rgba(255,255,255,0.85); border-bottom-color: rgba(0,0,0,0.06); }
+.light-mode .nav-links a { color: #555; }
+.light-mode .nav-links a:hover { color: #ff416c; }
+
+/* Page title row with a "Back to Dash" link */
+.page-header { margin-bottom: 30px; padding-bottom: 15px; border-bottom: 1px solid #333; display: flex; justify-content: space-between; align-items: flex-end; }
+.page-header h1 { font-size: 24px; color: #ff416c; }
+.page-header p { color: #aaa; font-size: 14px; margin-top: 5px; }
+.light-mode .page-header { border-bottom-color: #ddd; }
+.back-btn { background: #222; color: #fff; border: 1px solid #444; padding: 8px 15px; border-radius: 5px; text-decoration: none; font-size: 12px; transition: 0.3s; }
+.back-btn:hover { background: #ff416c; border-color: #ff416c; }
+
+/* Shrink the nav on phones so the logo and links fit on one line */
+@media (max-width: 480px) {
+    nav { padding: 14px 18px; }
+    .logo { font-size: 19px; }
+    .nav-links a { margin-left: 12px; font-size: 12px; }
+    .container { padding: 20px; }
+}
