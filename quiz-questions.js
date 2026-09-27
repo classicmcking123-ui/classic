@@ -1,0 +1,120 @@
+// Question bank for Quiz Arena, organized by course. Each match randomly samples a chosen
+// number of these (see the "Number of Questions" selector in Custom Room / 1v1 Challenge,
+// and QUESTIONS_PER_MATCH in live_quiz.html for Randoms). To add more, paste more objects
+// into this array in the same { question, options: [4 strings], correctIndex } shape -
+// correctIndex is the 0-based position of the right answer in options.
+const QUIZ_QUESTION_BANK = [
+
+    // --- ENT211: Entrepreneurship & Innovation ---
+    { question: "What is the primary purpose of a business plan?", options: ["To secure office space", "To outline the goals and strategy of a business", "To register a trademark", "To hire employees"], correctIndex: 1 },
+    { question: "Entrepreneurship primarily involves:", options: ["Avoiding all risk", "Identifying and pursuing opportunities", "Working only for large corporations", "Following fixed routines"], correctIndex: 1 },
+    { question: "Which of these best defines a 'startup'?", options: ["A government agency", "A young company designed to grow fast", "A charity organization", "A retired business"], correctIndex: 1 },
+    { question: "What does SWOT stand for in business analysis?", options: ["Sales, Workforce, Output, Tax", "Strengths, Weaknesses, Opportunities, Threats", "Supply, Warehouse, Order, Transport", "Strategy, Work, Ownership, Trade"], correctIndex: 1 },
+    { question: "What is 'bootstrapping' in entrepreneurship?", options: ["Borrowing heavily from banks", "Building a business without external funding", "Selling the company early", "Hiring a large team immediately"], correctIndex: 1 },
+    { question: "What is a 'value proposition'?", options: ["A company's tax filing", "The unique benefit a product offers customers", "A legal contract", "An employee's job title"], correctIndex: 1 },
+    { question: "What does ROI stand for?", options: ["Rate of Interest", "Return on Investment", "Record of Income", "Risk of Insolvency"], correctIndex: 1 },
+    { question: "Which funding source typically involves giving up equity in exchange for capital?", options: ["Bank loan", "Venture capital", "Personal savings", "Trade credit"], correctIndex: 1 },
+    { question: "What is 'market segmentation'?", options: ["Closing unprofitable stores", "Dividing a market into distinct groups of buyers", "Merging two companies", "Setting a fixed price for all products"], correctIndex: 1 },
+    { question: "A 'pivot' in a startup refers to:", options: ["Filing for bankruptcy", "Changing business strategy based on feedback", "Relocating the office", "Hiring a new CEO"], correctIndex: 1 },
+    { question: "What is a 'minimum viable product' (MVP)?", options: ["The cheapest product possible", "A basic version of a product used to test an idea", "A luxury flagship product", "A product with no features"], correctIndex: 1 },
+    { question: "Which best describes 'innovation'?", options: ["Repeating an existing process exactly", "Introducing new ideas, methods, or products", "Reducing staff numbers", "Copying a competitor precisely"], correctIndex: 1 },
+
+    // --- GET201: Applied Electricity I ---
+    { question: "What is the equivalent resistance of two 4Ω resistors connected in parallel?", options: ["8Ω", "4Ω", "16Ω", "2Ω"], correctIndex: 3 },
+    { question: "Ohm's Law states that V equals:", options: ["I / R", "I × R", "R / I", "I + R"], correctIndex: 1 },
+    { question: "What is the SI unit of electrical power?", options: ["Volt", "Ohm", "Watt", "Ampere"], correctIndex: 2 },
+    { question: "In a series circuit, the current is:", options: ["Different at every point", "The same at every point", "Zero everywhere", "Undefined"], correctIndex: 1 },
+    { question: "What is the standard frequency of AC mains supply in Nigeria?", options: ["50 Hz", "60 Hz", "100 Hz", "25 Hz"], correctIndex: 0 },
+    { question: "Which component stores electrical energy in an electric field?", options: ["Resistor", "Inductor", "Capacitor", "Diode"], correctIndex: 2 },
+    { question: "What is the unit of electrical resistance?", options: ["Ampere", "Volt", "Ohm", "Watt"], correctIndex: 2 },
+    { question: "Kirchhoff's Current Law is based on conservation of:", options: ["Energy", "Charge", "Mass", "Momentum"], correctIndex: 1 },
+    { question: "Kirchhoff's Voltage Law is based on conservation of:", options: ["Charge", "Energy", "Mass", "Current"], correctIndex: 1 },
+    { question: "What is the SI unit of electric charge?", options: ["Ampere", "Volt", "Coulomb", "Farad"], correctIndex: 2 },
+    { question: "In a purely resistive AC circuit, voltage and current are:", options: ["90° out of phase", "In phase", "180° out of phase", "Undefined"], correctIndex: 1 },
+    { question: "What does EMF stand for?", options: ["Electromagnetic Force", "Electromotive Force", "Electric Motor Function", "Energy Measurement Factor"], correctIndex: 1 },
+    { question: "Which of these is a good conductor of electricity?", options: ["Rubber", "Copper", "Glass", "Plastic"], correctIndex: 1 },
+    { question: "What is the power factor of a purely resistive circuit?", options: ["0", "0.5", "1", "2"], correctIndex: 2 },
+    { question: "Which instrument measures electric current?", options: ["Voltmeter", "Ammeter", "Ohmmeter", "Barometer"], correctIndex: 1 },
+    { question: "Which instrument measures voltage?", options: ["Ammeter", "Wattmeter", "Voltmeter", "Thermometer"], correctIndex: 2 },
+    { question: "Two resistors in series have a total resistance equal to:", options: ["Their product", "Their difference", "The sum of their resistances", "Half their average"], correctIndex: 2 },
+    { question: "What is the formula for electrical power?", options: ["P = V/I", "P = VI", "P = V + I", "P = I/V"], correctIndex: 1 },
+    { question: "What does AC stand for?", options: ["Active Current", "Alternating Current", "Applied Charge", "Ampere Cycle"], correctIndex: 1 },
+
+    // --- GET203: Engineering Graphics II ---
+    { question: "What does CAD stand for in engineering graphics?", options: ["Computer Aided Design", "Circuit Analysis Diagram", "Central Access Drive", "Component Assembly Drawing"], correctIndex: 0 },
+    { question: "In orthographic projection, how many principal views are typically shown?", options: ["One", "Two", "Three", "Six"], correctIndex: 2 },
+    { question: "What is the purpose of a sectional view in engineering drawing?", options: ["To make the drawing look decorative", "To show internal details of an object", "To hide dimensions", "To reduce paper size"], correctIndex: 1 },
+    { question: "In first-angle projection, the object is placed:", options: ["Behind the plane of projection", "Between the observer and the plane of projection", "Above the observer", "There is no fixed placement"], correctIndex: 1 },
+    { question: "What does a dimension line indicate on a drawing?", options: ["The material type", "The size of a feature", "The drawing date", "The designer's name"], correctIndex: 1 },
+    { question: "What is an isometric drawing?", options: ["A 2D top-down view only", "A 3D representation with equal angles between axes", "A drawing with no scale", "A drawing showing only hidden lines"], correctIndex: 1 },
+    { question: "Which type of line typically represents a hidden edge?", options: ["Solid thick line", "Dashed line", "Dotted centerline", "Wavy line"], correctIndex: 1 },
+    { question: "What is the standard angle between isometric axes?", options: ["90°", "45°", "120°", "180°"], correctIndex: 2 },
+    { question: "What does a scale of '1:2' mean on a drawing?", options: ["The drawing is twice the actual size", "The drawing is half the actual size", "The drawing is the same size", "The drawing has no defined size"], correctIndex: 1 },
+    { question: "What is a centerline used to indicate?", options: ["The outer boundary of a part", "The axis of symmetry", "A hidden surface", "The material thickness"], correctIndex: 1 },
+
+    // --- GET205: Fluid Mechanics ---
+    { question: "In fluid mechanics, viscosity measures a fluid's resistance to:", options: ["Compression", "Flow", "Heat", "Pressure"], correctIndex: 1 },
+    { question: "What is the SI unit of pressure?", options: ["Newton", "Pascal", "Joule", "Watt"], correctIndex: 1 },
+    { question: "Bernoulli's equation relates which quantities along a streamline?", options: ["Mass, time, and length", "Pressure, velocity, and elevation", "Charge, current, and resistance", "Force, area, and volume"], correctIndex: 1 },
+    { question: "The approximate density of water at 4°C is:", options: ["100 kg/m³", "500 kg/m³", "1000 kg/m³", "2000 kg/m³"], correctIndex: 2 },
+    { question: "What does the continuity equation describe in fluid flow?", options: ["Conservation of energy", "Conservation of mass", "Conservation of charge", "Conservation of momentum only"], correctIndex: 1 },
+    { question: "A fluid with constant density throughout is called:", options: ["Compressible", "Incompressible", "Viscous", "Turbulent"], correctIndex: 1 },
+    { question: "The Reynolds number is used to determine whether flow is:", options: ["Hot or cold", "Laminar or turbulent", "Acidic or basic", "Compressible or magnetic"], correctIndex: 1 },
+    { question: "Buoyancy on a submerged object is caused by:", options: ["Surface tension", "Pressure difference in the fluid", "Fluid color", "Temperature alone"], correctIndex: 1 },
+    { question: "Which principle explains why objects float?", options: ["Newton's Third Law", "Archimedes' Principle", "Pascal's Law", "Bernoulli's Principle"], correctIndex: 1 },
+    { question: "Hydrostatic pressure at a point in a fluid depends mainly on:", options: ["Depth and fluid density", "Container shape only", "Fluid color", "Ambient temperature only"], correctIndex: 0 },
+
+    // --- GET207: Applied Mechanics ---
+    { question: "What does RPM stand for?", options: ["Rate Per Minute", "Revolutions Per Minute", "Radius Per Meter", "Reaction Per Mass"], correctIndex: 1 },
+    { question: "Which law states that force equals mass times acceleration?", options: ["Newton's First Law", "Newton's Second Law", "Newton's Third Law", "Law of Conservation of Energy"], correctIndex: 1 },
+    { question: "Which of these is a vector quantity?", options: ["Mass", "Speed", "Velocity", "Energy"], correctIndex: 2 },
+    { question: "What is the SI unit of force?", options: ["Joule", "Newton", "Pascal", "Watt"], correctIndex: 1 },
+    { question: "In mechanics, torque is the rotational equivalent of:", options: ["Mass", "Force", "Velocity", "Energy"], correctIndex: 1 },
+    { question: "What is the SI unit of moment (torque)?", options: ["Joule", "Newton-metre", "Watt", "Pascal"], correctIndex: 1 },
+    { question: "A body is in static equilibrium when:", options: ["It is accelerating uniformly", "Net force and net moment on it are both zero", "It has zero mass", "It is rotating at constant speed"], correctIndex: 1 },
+    { question: "The center of gravity of a body is the point where:", options: ["All forces cancel to zero", "Its total weight can be considered to act", "Friction is greatest", "Velocity is maximum"], correctIndex: 1 },
+    { question: "Which law states 'every action has an equal and opposite reaction'?", options: ["Newton's First Law", "Newton's Second Law", "Newton's Third Law", "Hooke's Law"], correctIndex: 2 },
+    { question: "What is the formula for kinetic energy?", options: ["mgh", "½mv²", "mv", "F/m"], correctIndex: 1 },
+    { question: "Friction that opposes the motion of a moving body is called:", options: ["Static friction", "Kinetic friction", "Rolling resistance only", "Zero friction"], correctIndex: 1 },
+    { question: "A 'free body diagram' is used to:", options: ["Calculate a company's budget", "Show all forces acting on an object", "Draw a 3D CAD model", "Record experimental temperatures"], correctIndex: 1 },
+    { question: "What is the formula for linear momentum?", options: ["mass ÷ velocity", "mass × velocity", "mass × acceleration", "mass + velocity"], correctIndex: 1 },
+
+    // --- GET209: Engineering Math I ---
+    { question: "What is the derivative of x² with respect to x?", options: ["x", "2x", "x²", "2"], correctIndex: 1 },
+    { question: "The integral of a constant 'c' with respect to x is:", options: ["c", "cx", "0", "x"], correctIndex: 1 },
+    { question: "What is the derivative of sin(x)?", options: ["-sin(x)", "cos(x)", "-cos(x)", "tan(x)"], correctIndex: 1 },
+    { question: "What is the derivative of any constant?", options: ["1", "The constant itself", "0", "Undefined"], correctIndex: 2 },
+    { question: "What is the integral of 1/x dx?", options: ["x²/2 + C", "ln|x| + C", "1/x² + C", "x + C"], correctIndex: 1 },
+    { question: "What is the formula for the area of a circle of radius r?", options: ["2πr", "πr²", "πr", "4πr²"], correctIndex: 1 },
+    { question: "The value of Euler's number 'e' is approximately:", options: ["1.41", "2.72", "3.14", "0.577"], correctIndex: 1 },
+    { question: "A matrix with an equal number of rows and columns is called a:", options: ["Row matrix", "Square matrix", "Zero matrix", "Diagonal-only matrix"], correctIndex: 1 },
+    { question: "Differentiation of a function measures its:", options: ["Total area under the curve", "Rate of change", "Average value", "Maximum domain"], correctIndex: 1 },
+    { question: "The sum of the interior angles of a triangle is:", options: ["90°", "180°", "270°", "360°"], correctIndex: 1 },
+    { question: "The quadratic formula is used to solve equations of the form:", options: ["ax + b = 0", "ax² + bx + c = 0", "ax³ + b = 0", "a/x = b"], correctIndex: 1 },
+    { question: "What is log base 10 of 100?", options: ["1", "2", "10", "100"], correctIndex: 1 },
+
+    // --- GET211: Software Engineering ---
+    { question: "Which gate outputs true only when both inputs are true?", options: ["OR", "NOT", "AND", "XOR"], correctIndex: 2 },
+    { question: "What does SDLC stand for?", options: ["Software Design Logic Chain", "Software Development Life Cycle", "System Data Load Cycle", "Static Data Link Component"], correctIndex: 1 },
+    { question: "Which software process model follows a strict linear sequence of phases?", options: ["Agile model", "Waterfall model", "Spiral model", "Prototype model"], correctIndex: 1 },
+    { question: "In software terms, a 'bug' is:", options: ["A hardware component", "An error or flaw in a program", "A type of database", "A user account"], correctIndex: 1 },
+    { question: "What does OOP stand for?", options: ["Open Operating Protocol", "Object-Oriented Programming", "Output Ordering Process", "Online Operations Platform"], correctIndex: 1 },
+    { question: "Version control systems are primarily used to:", options: ["Compile source code", "Track changes to source code over time", "Design user interfaces", "Encrypt passwords"], correctIndex: 1 },
+    { question: "Which of these is a popular distributed version control system?", options: ["Git", "Excel", "Photoshop", "MySQL Workbench"], correctIndex: 0 },
+    { question: "'Debugging' refers to:", options: ["Writing new features", "Finding and fixing errors in code", "Deleting a project", "Designing a logo"], correctIndex: 1 },
+    { question: "What does API stand for?", options: ["Application Programming Interface", "Automated Process Integration", "Applied Protocol Index", "Application Process Input"], correctIndex: 0 },
+    { question: "A requirements specification document is used to:", options: ["List employee salaries", "Define what a system should do", "Store customer passwords", "Track server uptime"], correctIndex: 1 },
+    { question: "What does UML stand for?", options: ["Universal Machine Language", "Unified Modeling Language", "User Management Layer", "Unit Measurement Log"], correctIndex: 1 },
+
+    // --- OOU-EEE201: Lab & Installation ---
+    { question: "In standard wiring color codes, which color is typically used for the live wire?", options: ["Blue", "Green/Yellow", "Brown", "Black"], correctIndex: 2 },
+    { question: "In standard wiring color codes, which color is typically used for the neutral wire?", options: ["Brown", "Blue", "Red", "Green/Yellow"], correctIndex: 1 },
+    { question: "Which device protects a circuit from overcurrent?", options: ["Capacitor", "Circuit breaker", "Transformer", "Resistor"], correctIndex: 1 },
+    { question: "'Earthing' (grounding) in an electrical installation primarily protects against:", options: ["High electricity bills", "Electric shock", "Slow internet", "Low voltage supply"], correctIndex: 1 },
+    { question: "Which instrument is used to measure insulation resistance?", options: ["Ammeter", "Megger", "Voltmeter", "Wattmeter"], correctIndex: 1 },
+    { question: "What is the main purpose of a fuse in a circuit?", options: ["To increase voltage", "To break the circuit during an overcurrent fault", "To store energy", "To convert AC to DC"], correctIndex: 1 },
+    { question: "The standard household mains voltage in Nigeria is approximately:", options: ["110V", "230V", "440V", "12V"], correctIndex: 1 },
+    { question: "What does RCD stand for in electrical installation?", options: ["Rated Current Delivery", "Residual Current Device", "Reactive Circuit Diagram", "Resistance Control Dial"], correctIndex: 1 },
+    { question: "A 'short circuit' is best described as:", options: ["A circuit with too much resistance", "An unintended low-resistance connection between conductors", "A circuit with no current flow", "A circuit operating at low voltage"], correctIndex: 1 },
+    { question: "Before working on a circuit, power should be isolated primarily to:", options: ["Save energy costs", "Prevent electric shock", "Make testing faster", "Reduce noise"], correctIndex: 1 }
+];

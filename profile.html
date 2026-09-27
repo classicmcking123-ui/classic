@@ -1,0 +1,551 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>StudyHive - Profile</title>
+    <!-- FontAwesome for Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#ff416c">
+    <!-- Firebase (Auth + Firestore) -->
+    <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
+    <script src="firebase-config.js"></script>
+    <script src="idle-timeout.js"></script>
+    <script src="register-sw.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background-color: #1a1a1a;
+            color: #ffffff;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            transition: background-color 0.3s, color 0.3s;
+        }
+
+        /* Thin, dark scrollbars so panels feel considered rather than default-browser */
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.12); border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.2); }
+        .light-mode ::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.15); }
+        .light-mode ::-webkit-scrollbar-thumb:hover { background: rgba(0,0,0,0.25); }
+
+        /* --- LIGHT MODE VARIABLES --- */
+        body.light-mode { background-color: #f4f4f9; color: #333; }
+        .light-mode nav { background: rgba(255,255,255,0.85); border-bottom-color: rgba(0,0,0,0.06); }
+        .light-mode .nav-links a { color: #555; }
+        .light-mode .profile-sidebar, .light-mode .settings-card { background-color: #fff; border-color: #e0e0e0; box-shadow: 0 2px 10px rgba(0,0,0,0.02); }
+        .light-mode .settings-menu li a { color: #555; border-bottom-color: #f0f0f0; }
+        .light-mode .settings-menu li a:hover, .light-mode .settings-menu li a.active { background-color: #fafafa; }
+        .light-mode .profile-header { background: #fff; border: 1px solid #e0e0e0; border-top: 5px solid #ff416c; }
+        .light-mode .form-group input, .light-mode .form-group select { background-color: #fafafa; border-color: #ccc; color: #333; }
+        .light-mode .user-info h1 { color: #222; }
+        .light-mode .form-group label, .light-mode .settings-card p { color: #666; }
+
+        /* Navigation Bar */
+        nav {
+            background: rgba(13, 13, 15, 0.85);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            padding: 18px 40px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid rgba(255,255,255,0.06);
+            position: sticky;
+            top: 0;
+            z-index: 50;
+        }
+
+        .logo {
+            font-size: 24px;
+            font-weight: 800;
+            letter-spacing: -0.3px;
+            background: linear-gradient(to right, #ff4b2b, #ff416c);
+            background-clip: text;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .nav-links a {
+            color: #ccc;
+            text-decoration: none;
+            margin-left: 20px;
+            font-size: 14px;
+            font-weight: 500;
+            transition: color 0.2s;
+        }
+
+        .nav-links a:hover { color: #ff416c; }
+
+        /* Profile Layout */
+        .container {
+            flex: 1;
+            padding: 40px;
+            max-width: 1100px;
+            margin: 0 auto;
+            width: 100%;
+            display: flex;
+            gap: 30px;
+            align-items: flex-start;
+        }
+
+        /* Sidebar Menu */
+        .profile-sidebar {
+            width: 280px;
+            background-color: #222;
+            border-radius: 10px;
+            border: 1px solid #333;
+            overflow: hidden;
+            transition: 0.3s;
+        }
+
+        .settings-menu { list-style: none; }
+        .settings-menu li a {
+            display: flex;
+            align-items: center;
+            padding: 18px 25px;
+            color: #aaa;
+            text-decoration: none;
+            font-size: 14px;
+            transition: all 0.3s ease;
+            border-left: 4px solid transparent;
+            border-bottom: 1px solid #2a2a2a;
+        }
+        .settings-menu li a:hover { background-color: #2a2a2a; color: #fff; }
+        .settings-menu li a.active {
+            background-color: #2a2a2a;
+            color: #ff416c;
+            border-left-color: #ff416c;
+            font-weight: bold;
+        }
+        .settings-menu li a i { margin-right: 15px; width: 20px; text-align: center; font-size: 16px; }
+
+        /* Main Content Area */
+        .profile-main { flex: 1; }
+
+        .profile-header {
+            background: linear-gradient(to right, #2a2a2a, #222);
+            padding: 30px;
+            border-radius: 10px;
+            margin-bottom: 30px;
+            border-top: 5px solid #ff416c;
+            display: flex;
+            align-items: center;
+            gap: 30px;
+            border: 1px solid #333;
+            transition: 0.3s;
+        }
+
+        .profile-img-container { position: relative; width: 120px; height: 120px; }
+        .profile-img { width: 100%; height: 100%; border-radius: 50%; object-fit: cover; border: 3px solid #ff416c; background-color: #333; }
+        /* Shown until the user has an actual photo - avoids depending on an external placeholder image */
+        .profile-img-fallback {
+            width: 100%; height: 100%; border-radius: 50%; border: 3px solid #ff416c;
+            background: linear-gradient(145deg, #ff4b2b, #ff416c); display: flex; align-items: center;
+            justify-content: center; font-size: 46px; color: #fff; box-shadow: 0 0 25px rgba(255,65,108,0.35);
+        }
+
+        .upload-btn {
+            position: absolute; bottom: 0; right: 0; background: #ff416c; color: white; border: none; border-radius: 50%; width: 35px; height: 35px; cursor: pointer; display: flex; justify-content: center; align-items: center; box-shadow: 0 2px 5px rgba(0,0,0,0.5); transition: 0.3s;
+        }
+        .upload-btn:hover { background: #ff4b2b; transform: scale(1.1); }
+        #imgUpload { display: none; }
+
+        .user-info h1 { font-size: 26px; margin-bottom: 5px; }
+        .user-info p { color: #aaa; font-size: 14px; margin-bottom: 5px; }
+
+        /* Settings Cards */
+        .settings-card {
+            background-color: #222;
+            padding: 30px;
+            border-radius: 10px;
+            border: 1px solid #333;
+            transition: 0.3s;
+        }
+        .settings-card:hover { border-color: #444; box-shadow: 0 8px 20px rgba(0,0,0,0.2); }
+
+        @keyframes cardIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .profile-sidebar, .profile-header, .settings-card { animation: cardIn 0.4s ease backwards; }
+        .profile-header { animation-delay: 0.04s; }
+        .settings-card { animation-delay: 0.08s; }
+
+        .settings-card h3 {
+            margin-bottom: 20px;
+            color: #ff416c;
+            border-bottom: 1px solid #333;
+            padding-bottom: 10px;
+        }
+
+        .form-group { margin-bottom: 15px; }
+        .form-group label { display: block; margin-bottom: 8px; font-size: 13px; color: #aaa; }
+        .form-group input, .form-group select {
+            width: 100%; padding: 12px; background-color: #111; border: 1px solid #333; border-radius: 5px; color: #fff;
+        }
+        .form-group input:focus, .form-group select:focus { outline: 1px solid #ff416c; border-color: transparent; }
+
+        .save-btn {
+            background: linear-gradient(to right, #ff4b2b, #ff416c); color: #fff; border: none; padding: 12px 30px; border-radius: 25px; cursor: pointer; font-weight: bold; margin-top: 10px; transition: 0.3s;
+        }
+        .save-btn:hover { opacity: 0.85; }
+
+        /* Toggle Switch for Appearance */
+        .theme-toggle-row {
+            display: flex; justify-content: space-between; align-items: center; background: rgba(0,0,0,0.1); padding: 15px 20px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.05);
+        }
+        .switch { position: relative; display: inline-block; width: 50px; height: 26px; }
+        .switch input { opacity: 0; width: 0; height: 0; }
+        .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #111; transition: .4s; border-radius: 26px; border: 1px solid #444;}
+        .slider:before { position: absolute; content: ""; height: 18px; width: 18px; left: 3px; bottom: 3px; background-color: white; transition: .4s; border-radius: 50%; }
+        input:checked + .slider { background-color: #ff416c; border-color: #ff416c; }
+        input:checked + .slider:before { transform: translateX(24px); }
+        .light-mode .slider { background-color: #ccc; border-color: #aaa; }
+        .light-mode .theme-toggle-row { background: rgba(0,0,0,0.02); border-color: rgba(0,0,0,0.1); }
+
+        /* --- Mobile: shrink the nav so the logo + links fit on one line instead of wrapping --- */
+        @media (max-width: 480px) {
+            nav { padding: 14px 18px; }
+            .logo { font-size: 19px; }
+            .nav-links a { margin-left: 12px; font-size: 12px; }
+            .container { padding: 20px; }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Navigation (rendered by app.js; logout lives in the sidebar instead, see #logoutLink below) -->
+    <div id="navbar-container"></div>
+
+    <!-- Main Content Layout -->
+    <div class="container">
+        
+        <!-- SIDEBAR MENU -->
+        <div class="profile-sidebar">
+            <ul class="settings-menu">
+                <li><a href="#" id="tab-edit" class="active"><i class="fas fa-user-edit"></i> Edit Details</a></li>
+                <li><a href="#" id="tab-security"><i class="fas fa-lock"></i> Security & Password</a></li>
+                <li><a href="#" id="tab-appearance"><i class="fas fa-paint-brush"></i> Appearance</a></li>
+                <li><a href="#" onclick="alert('Notifications coming soon!')"><i class="fas fa-bell"></i> Notifications</a></li>
+                <li style="margin-top: 20px;"><a href="#" id="logoutLink" style="color: #ff4b2b;"><i class="fas fa-sign-out-alt"></i> Log Out</a></li>
+            </ul>
+        </div>
+
+        <!-- RIGHT SIDE: ACTIVE SETTING CONTENT -->
+        <div class="profile-main">
+            <!-- Profile Overview (Stays visible on all tabs) -->
+            <div class="profile-header">
+                <div class="profile-img-container">
+                    <div class="profile-img-fallback" id="profilePicFallback"><i class="fas fa-user"></i></div>
+                    <img alt="Profile Picture" class="profile-img" id="profilePic" style="display: none;">
+                    <label for="imgUpload" class="upload-btn"><i class="fas fa-camera"></i></label>
+                    <input type="file" id="imgUpload" accept="image/*">
+                </div>
+                <div class="user-info">
+                    <h1 id="profileName">Loading...</h1>
+                    <p><i class="fas fa-graduation-cap"></i> <span id="profileCourse">Loading...</span></p>
+                </div>
+            </div>
+
+            <!-- TAB 1: Edit Details -->
+            <div id="section-edit" class="settings-card">
+                <h3>Edit Details</h3>
+                <form id="editForm">
+                    <div class="form-group">
+                        <label>Full Name</label>
+                        <input type="text" id="editName" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Phone Number</label>
+                        <input type="tel" id="editPhone" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Engineering Course</label>
+                        <select id="editCourse" required>
+                            <option value="Electrical Engineering">Electrical Engineering</option>
+                            <option value="Mechanical Engineering">Mechanical Engineering</option>
+                            <option value="Civil Engineering">Civil Engineering</option>
+                            <option value="Computer Engineering">Computer Engineering</option>
+                            <option value="Agricultural Engineering">Agricultural Engineering</option>
+                        </select>
+                    </div>
+                    <button type="submit" class="save-btn">Save Details</button>
+                </form>
+
+                <hr style="margin: 25px 0; border: none; border-top: 1px solid #333;">
+
+                <h3>Username</h3>
+                <form id="usernameForm">
+                    <div class="form-group">
+                        <label>Your unique @handle (used when people search for you)</label>
+                        <input type="text" id="editUsername" placeholder="e.g. jane_doe" required>
+                        <small id="usernameStatus" style="display: block; margin-top: 6px; font-size: 12px; min-height: 14px;"></small>
+                    </div>
+                    <button type="submit" class="save-btn">Update Username</button>
+                </form>
+            </div>
+
+            <!-- TAB 2: Update Password Section -->
+            <div id="section-security" class="settings-card" style="display: none;">
+                <h3>Update Password</h3>
+                <form id="passwordForm">
+                    <div class="form-group">
+                        <label>Current Password</label>
+                        <input type="password" id="currentPassword" required>
+                    </div>
+                    <div class="form-group">
+                        <label>New Password</label>
+                        <input type="password" id="newPassword" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Confirm New Password</label>
+                        <input type="password" id="confirmNewPassword" required>
+                    </div>
+                    <button type="submit" class="save-btn">Save Password</button>
+                </form>
+            </div>
+
+            <!-- TAB 3: Appearance Section -->
+            <div id="section-appearance" class="settings-card" style="display: none;">
+                <h3>Appearance</h3>
+                <p style="margin-bottom: 20px; font-size: 14px;">Customize how StudyHive looks on this device.</p>
+                <div class="theme-toggle-row">
+                    <span><i class="fas fa-sun" style="margin-right: 10px;"></i> Light Mode</span>
+                    <label class="switch">
+                      <input type="checkbox" id="themeToggle">
+                      <span class="slider"></span>
+                    </label>
+                </div>
+            </div>
+            
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+    <script>
+        // --- 1. Load User Data ---
+        const user = requireAuth();
+
+        if (user) {
+            // Update display headers
+            document.getElementById('profileName').textContent = user.name;
+            document.getElementById('profileCourse').textContent = user.course || 'Course not set';
+            if (user.profileImage) {
+                document.getElementById('profilePic').src = user.profileImage;
+                document.getElementById('profilePic').style.display = 'block';
+                document.getElementById('profilePicFallback').style.display = 'none';
+            }
+
+            // Pre-fill the Edit Details form
+            document.getElementById('editName').value = user.name || '';
+            document.getElementById('editPhone').value = user.phone || '';
+            document.getElementById('editCourse').value = user.course || 'Electrical Engineering';
+            document.getElementById('editUsername').value = user.username || '';
+        }
+
+        document.getElementById('logoutLink').addEventListener('click', async (e) => {
+            e.preventDefault();
+            await logoutUser();
+        });
+
+        // app.js already applied the saved theme to <body> - just sync the toggle's visual state to match
+        const themeToggle = document.getElementById('themeToggle');
+        themeToggle.checked = document.body.classList.contains('light-mode');
+
+        // --- 2. Tab Switching Logic ---
+        const tabs = {
+            'tab-edit': 'section-edit',
+            'tab-security': 'section-security',
+            'tab-appearance': 'section-appearance'
+        };
+
+        function switchTab(activeTabId) {
+            // Remove active style from all sidebar links and hide all sections
+            Object.keys(tabs).forEach(tabId => {
+                document.getElementById(tabId).classList.remove('active');
+                document.getElementById(tabs[tabId]).style.display = 'none';
+            });
+            
+            // Add active style to clicked link and show its section
+            document.getElementById(activeTabId).classList.add('active');
+            document.getElementById(tabs[activeTabId]).style.display = 'block';
+        }
+
+        document.getElementById('tab-edit').addEventListener('click', (e) => { e.preventDefault(); switchTab('tab-edit'); });
+        document.getElementById('tab-security').addEventListener('click', (e) => { e.preventDefault(); switchTab('tab-security'); });
+        document.getElementById('tab-appearance').addEventListener('click', (e) => { e.preventDefault(); switchTab('tab-appearance'); });
+
+        // --- NEW: Helper Function to Save to Database ---
+        async function saveToDatabase() {
+            try {
+                await db.collection('users').doc(user.id).set({
+                    name: user.name || '',
+                    name_lower: (user.name || '').toLowerCase(),
+                    phone: user.phone || '',
+                    email: user.email || '',
+                    course: user.course || '',
+                    profileImage: user.profileImage || ''
+                }, { merge: true });
+            } catch (err) {
+                console.error("Failed to sync with Firestore", err);
+            }
+        }
+
+        // --- 3. Profile Picture Upload ---
+        document.getElementById('imgUpload').addEventListener('change', function() {
+            const file = this.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.addEventListener('load', function() {
+                    document.getElementById('profilePic').src = this.result;
+                    document.getElementById('profilePic').style.display = 'block';
+                    document.getElementById('profilePicFallback').style.display = 'none';
+                    user.profileImage = this.result;
+                    localStorage.setItem('studyHiveUser', JSON.stringify(user));
+                    saveToDatabase(); // Now sends it to the permanent database!
+                });
+                reader.readAsDataURL(file);
+            }
+        });
+
+        // --- 4. Handle Edit Details Form ---
+        document.getElementById('editForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            user.name = document.getElementById('editName').value;
+            user.phone = document.getElementById('editPhone').value;
+            user.course = document.getElementById('editCourse').value;
+            
+            localStorage.setItem('studyHiveUser', JSON.stringify(user));
+            
+            document.getElementById('profileName').textContent = user.name;
+            document.getElementById('profileCourse').textContent = user.course || 'Course not set';
+
+            saveToDatabase(); // Now sends it to the permanent database!
+            alert("Profile details updated securely!");
+        });
+
+        // --- 4b. Username: live availability check + atomic rename ---
+        const USERNAME_REGEX = /^[a-zA-Z0-9_]{3,20}$/;
+        const editUsernameInput = document.getElementById('editUsername');
+        const usernameStatus = document.getElementById('usernameStatus');
+        let usernameAvailable = true; // starts true since the field is pre-filled with the user's own current username
+        let usernameCheckToken = 0;
+        let usernameDebounce = null;
+
+        editUsernameInput.addEventListener('input', function() {
+            const value = this.value.trim();
+            clearTimeout(usernameDebounce);
+
+            if (value.toLowerCase() === (user.username || '').toLowerCase()) {
+                usernameAvailable = true;
+                usernameStatus.textContent = '';
+                return;
+            }
+
+            if (!USERNAME_REGEX.test(value)) {
+                usernameAvailable = false;
+                usernameStatus.textContent = '3-20 characters: letters, numbers, underscores only';
+                usernameStatus.style.color = '#ff4b2b';
+                return;
+            }
+
+            usernameAvailable = false;
+            usernameStatus.textContent = 'Checking availability...';
+            usernameStatus.style.color = '#888';
+
+            const myToken = ++usernameCheckToken;
+            usernameDebounce = setTimeout(async () => {
+                const taken = await db.collection('usernames').doc(value.toLowerCase()).get();
+                if (myToken !== usernameCheckToken) return; // a newer keystroke already superseded this check
+
+                if (taken.exists) {
+                    usernameStatus.textContent = 'Username is already taken';
+                    usernameStatus.style.color = '#ff4b2b';
+                } else {
+                    usernameAvailable = true;
+                    usernameStatus.textContent = 'Username is available';
+                    usernameStatus.style.color = '#25D366';
+                }
+            }, 400);
+        });
+
+        document.getElementById('usernameForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+
+            const newUsername = editUsernameInput.value.trim();
+            const newLower = newUsername.toLowerCase();
+            const oldLower = (user.username || '').toLowerCase();
+
+            if (newLower === oldLower) return; // nothing changed
+
+            if (!USERNAME_REGEX.test(newUsername)) {
+                return alert('Please choose a username (3-20 characters: letters, numbers, underscores only).');
+            }
+            if (!usernameAvailable) {
+                return alert('That username is not available. Please choose another.');
+            }
+
+            try {
+                await db.runTransaction(async (tx) => {
+                    const newRef = db.collection('usernames').doc(newLower);
+                    const newDoc = await tx.get(newRef);
+                    if (newDoc.exists) {
+                        throw new Error('Username was just taken by someone else. Please choose another.');
+                    }
+                    tx.set(newRef, { uid: user.id });
+                    if (oldLower) tx.delete(db.collection('usernames').doc(oldLower));
+                    tx.set(db.collection('users').doc(user.id), {
+                        username: newUsername,
+                        username_lower: newLower
+                    }, { merge: true });
+                });
+
+                user.username = newUsername;
+                localStorage.setItem('studyHiveUser', JSON.stringify(user));
+                usernameStatus.textContent = '';
+                alert('Username updated!');
+            } catch (error) {
+                alert(error.message);
+            }
+        });
+
+        // --- 5. Handle Password Update ---
+        document.getElementById('passwordForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const currentPass = document.getElementById('currentPassword').value;
+            const newPass = document.getElementById('newPassword').value;
+            const confirmPass = document.getElementById('confirmNewPassword').value;
+
+            if (currentPass !== user.password) return alert("Incorrect current password!");
+            if (newPass !== confirmPass) return alert("New passwords do not match!");
+
+            user.password = newPass;
+            localStorage.setItem('studyHiveUser', JSON.stringify(user));
+            alert("Password updated successfully!");
+            this.reset();
+        });
+
+        // --- 6. Handle Appearance Toggle ---
+        themeToggle.addEventListener('change', function() {
+            if (this.checked) {
+                document.body.classList.add('light-mode');
+                localStorage.setItem('studyHiveTheme', 'light');
+            } else {
+                document.body.classList.remove('light-mode');
+                localStorage.setItem('studyHiveTheme', 'dark');
+            }
+        });
+
+    </script>
+</body>
+</html>

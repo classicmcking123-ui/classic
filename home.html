@@ -1,0 +1,444 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>StudyHive - Home</title>
+    <!-- FontAwesome for Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#ff416c">
+    <script src="idle-timeout.js"></script>
+    <script src="register-sw.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background-color: #1a1a1a;
+            color: #ffffff;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Thin, dark scrollbars so panels feel considered rather than default-browser */
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.12); border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.2); }
+        .light-mode ::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.15); }
+        .light-mode ::-webkit-scrollbar-thumb:hover { background: rgba(0,0,0,0.25); }
+
+        /* --- LIGHT MODE VARIABLES FOR DASHBOARD --- */
+        body.light-mode { background-color: #f4f4f9; color: #333; }
+        .light-mode nav { background: rgba(255,255,255,0.85); border-bottom-color: rgba(0,0,0,0.06); }
+        .light-mode .nav-links a { color: #555; }
+        .light-mode .nav-links a:hover { color: #ff416c; }
+        
+        .light-mode .welcome-section { background: #fff; border: 1px solid #e0e0e0; border-left: 5px solid #ff416c; }
+        .light-mode .welcome-section h1 { color: #222; }
+        .light-mode .welcome-section p { color: #666; }
+        .light-mode .student-details { background: #f0f0f0; color: #333; }
+        
+        .light-mode .card { background-color: #fff; border-color: #e0e0e0; box-shadow: 0 2px 10px rgba(0,0,0,0.02); }
+        .light-mode .card h3 { color: #222; }
+        .light-mode .card p { color: #666; }
+        
+        .light-mode .arena-card { background: linear-gradient(145deg, #fff0f3, #fff); border: 1px solid #ff416c; }
+        .light-mode .arena-card i { color: #ff416c; text-shadow: none; }
+
+        /* Navigation Bar */
+        nav {
+            background: rgba(13, 13, 15, 0.85);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            padding: 18px 40px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid rgba(255,255,255,0.06);
+            position: sticky;
+            top: 0;
+            z-index: 50;
+        }
+
+        .logo {
+            font-size: 24px;
+            font-weight: 800;
+            letter-spacing: -0.3px;
+            background: linear-gradient(to right, #ff4b2b, #ff416c);
+            background-clip: text;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .nav-links a {
+            color: #ccc;
+            text-decoration: none;
+            margin-left: 20px;
+            font-size: 14px;
+            font-weight: 500;
+            transition: color 0.2s;
+        }
+
+        .nav-links a:hover {
+            color: #ff416c;
+        }
+
+        .logout-btn {
+            background-color: transparent;
+            border: 1px solid #ff4b2b;
+            color: #ff4b2b;
+            padding: 8px 20px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: 0.3s;
+            text-decoration: none;
+            font-size: 12px;
+        }
+
+        .logout-btn:hover {
+            background-color: #ff4b2b;
+            color: #fff;
+        }
+
+        /* Main Content */
+        .container {
+            flex: 1;
+            padding: 40px;
+            max-width: 1200px;
+            margin: 0 auto;
+            width: 100%;
+        }
+
+        /* Welcome Section */
+        .welcome-section {
+            background: linear-gradient(to right, #2a2a2a, #222);
+            padding: 30px;
+            border-radius: 10px;
+            margin-bottom: 40px;
+            border-left: 5px solid #ff416c;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .welcome-section h1 {
+            font-size: 28px;
+            margin-bottom: 10px;
+        }
+
+        .welcome-section p {
+            color: #aaa;
+            font-size: 15px;
+        }
+
+        .student-details {
+            margin-top: 15px;
+            display: inline-block;
+            background: #111;
+            padding: 10px 20px;
+            border-radius: 5px;
+            font-size: 13px;
+            color: #ddd;
+        }
+
+        /* Dashboard Grid */
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 25px;
+        }
+
+        /* Individual Cards */
+        .card {
+            background-color: #222;
+            padding: 30px 20px;
+            border-radius: 10px;
+            text-align: center;
+            transition: transform 0.3s, box-shadow 0.3s;
+            border: 1px solid #333;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 20px rgba(255, 65, 108, 0.15);
+            border-color: #ff416c;
+        }
+
+        .card i {
+            font-size: 40px;
+            margin-bottom: 20px;
+            color: #ff4b2b;
+        }
+
+        .card h3 {
+            font-size: 20px;
+            margin-bottom: 15px;
+        }
+
+        .card p {
+            font-size: 14px;
+            color: #999;
+            margin-bottom: 25px;
+            line-height: 1.5;
+        }
+
+        .card-btn {
+            background: linear-gradient(to right, #ff4b2b, #ff416c);
+            color: #fff;
+            border: none;
+            padding: 12px;
+            border-radius: 25px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 14px;
+            transition: opacity 0.3s;
+            width: 100%;
+        }
+
+        .card-btn:hover {
+            opacity: 0.85;
+        }
+
+        /* Special Styling for the 1v1 Arena Card */
+        .arena-card {
+            background: linear-gradient(145deg, #2a0810, #222);
+            border: 1px solid #ff416c;
+        }
+        
+        .arena-card i {
+            color: #fff;
+            text-shadow: 0 0 10px #ff4b2b;
+        }
+
+        /* Profile avatar: shows the user's photo if they have one, otherwise a
+           gradient circle with a user icon - no dependency on an external placeholder image. */
+        .profile-avatar {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            border: 3px solid #ff416c;
+            background: linear-gradient(145deg, #ff4b2b, #ff416c);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 32px;
+            color: #fff;
+            overflow: hidden;
+            flex-shrink: 0;
+            box-shadow: 0 0 25px rgba(255, 65, 108, 0.35);
+        }
+
+        .profile-avatar img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        /* Decorative glow behind the welcome banner for a bit of depth */
+        .welcome-section::before {
+            content: '';
+            position: absolute;
+            top: -60px;
+            right: -60px;
+            width: 200px;
+            height: 200px;
+            background: radial-gradient(circle, rgba(255, 65, 108, 0.18), transparent 70%);
+            pointer-events: none;
+        }
+
+        .welcome-section > * {
+            position: relative;
+            z-index: 1;
+        }
+
+        /* Icon badge inside each dashboard card, colored per-card via inline style */
+        .card-icon {
+            width: 64px;
+            height: 64px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 18px;
+        }
+
+        .card-icon i {
+            font-size: 26px;
+            margin-bottom: 0;
+        }
+
+        /* Staggered fade-in for the dashboard cards */
+        @keyframes cardIn {
+            from { opacity: 0; transform: translateY(14px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .card {
+            animation: cardIn 0.5s ease backwards;
+        }
+
+        .dashboard-grid .card:nth-child(1) { animation-delay: 0.05s; }
+        .dashboard-grid .card:nth-child(2) { animation-delay: 0.1s; }
+        .dashboard-grid .card:nth-child(3) { animation-delay: 0.15s; }
+        .dashboard-grid .card:nth-child(4) { animation-delay: 0.2s; }
+        .dashboard-grid .card:nth-child(5) { animation-delay: 0.25s; }
+
+        /* --- Mobile: shrink the nav so the logo + links fit on one line instead of wrapping --- */
+        @media (max-width: 480px) {
+            nav { padding: 14px 18px; }
+            .logo { font-size: 19px; }
+            .nav-links a { margin-left: 12px; font-size: 12px; }
+            .container { padding: 20px; }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Navigation (rendered by app.js) -->
+    <div id="navbar-container"></div>
+
+    <!-- Main Content -->
+    <div class="container">
+       <!-- Welcome Banner -->
+        <div class="welcome-section" style="display: flex; align-items: center; gap: 20px;">
+            <div class="profile-avatar" id="dashAvatarWrap">
+                <img id="dashProfilePic" alt="Profile" style="display: none;">
+                <i class="fas fa-user" id="dashAvatarIcon"></i>
+            </div>
+            <div>
+                <h1><span id="greeting">Welcome back</span>, <span id="userName">Student</span>!</h1>
+                <div class="student-details">
+                    <i class="fas fa-graduation-cap"></i> <span id="userCourse">Loading Course...</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Dashboard Grid -->
+        <div class="dashboard-grid">
+            
+           <!-- Card 1: Course Outlines -->
+            <div class="card">
+                <div class="card-icon" style="background: rgba(79, 172, 254, 0.12);">
+                    <i class="fas fa-book-open" style="color: #4facfe;"></i>
+                </div>
+                <h3>Course Outlines</h3>
+                <p>Access your complete syllabus, lecture schedules, and lesson notes.</p>
+                <a href="course_outlines.html" style="text-decoration: none; width: 100%;">
+                    <button class="card-btn">View Outlines</button>
+                </a>
+            </div>
+
+            <!-- Card 2: Past Questions -->
+            <div class="card">
+                <div class="card-icon" style="background: rgba(247, 183, 51, 0.12);">
+                    <i class="fas fa-file-alt" style="color: #f7b733;"></i>
+                </div>
+                <h3>Past Questions</h3>
+                <p>Prepare for exams with our database of previous examination papers.</p>
+                <a href="past_questions.html" style="text-decoration: none; width: 100%;">
+                    <button class="card-btn">Start Practicing</button>
+                </a>
+            </div>
+
+            <!-- Card 3: Notes & Tips -->
+            <div class="card">
+                <div class="card-icon" style="background: rgba(165, 94, 234, 0.12);">
+                    <i class="fas fa-lightbulb" style="color: #a55eea;"></i>
+                </div>
+                <h3>Notes & Tips</h3>
+                <p>Share your study materials and discover reading tips from top students.</p>
+                <a href="notes.html" style="text-decoration: none; width: 100%;">
+                    <button class="card-btn">Explore Notes</button>
+                </a>
+            </div>
+
+            <!-- Card 4: Quiz Arena -->
+            <div class="arena-card card">
+                <div class="card-icon" style="background: rgba(255, 65, 108, 0.18);">
+                    <i class="fas fa-gamepad"></i>
+                </div>
+                <h3>Quiz Arena</h3>
+                <p>Challenge your coursemates to real-time engineering quizzes and climb the leaderboard.</p>
+                <a href="quiz_arena.html" style="text-decoration: none; width: 100%;">
+                    <button class="card-btn">Enter Arena</button>
+                </a>
+            </div>
+
+            <!-- Card 5: Social Space -->
+            <div class="card" style="border-color: #25D366;">
+                <div class="card-icon" style="background: rgba(37, 211, 102, 0.12);">
+                    <i class="fas fa-comments" style="color: #25D366;"></i>
+                </div>
+                <h3>Hive Social</h3>
+                <p>Chat with coursemates, share private statuses, or post public updates to the whole school.</p>
+                <a href="social.html">
+                    <button class="card-btn" style="background: linear-gradient(to right, #128C7E, #25D366); width: 100%;">Open Chat</button>
+                </a>
+            </div>
+
+        </div>
+    </div>
+    <script src="app.js"></script>
+    <script>
+        const user = requireAuth();
+
+        if (user) {
+            const nameSpace = document.getElementById('userName');
+            const courseSpace = document.getElementById('userCourse');
+            const greetingSpace = document.getElementById('greeting');
+            const picSpace = document.getElementById('dashProfilePic');
+            const iconSpace = document.getElementById('dashAvatarIcon');
+
+            if (nameSpace) nameSpace.textContent = user.name;
+            if (courseSpace) courseSpace.textContent = user.course || 'Course not set';
+
+            if (greetingSpace) {
+                const hour = new Date().getHours();
+                greetingSpace.textContent = hour < 12 ? 'Good morning' : hour < 18 ? 'Good afternoon' : 'Good evening';
+            }
+
+            if (user.profileImage && picSpace) {
+                picSpace.src = user.profileImage;
+                picSpace.style.display = 'block';
+                if (iconSpace) iconSpace.style.display = 'none';
+            }
+        }
+
+        async function loadLeaderboard() {
+    const leaderboardList = document.getElementById('leaderboardList');
+    
+    // Query the top 10 users with the most XP
+    db.collection('users')
+      .orderBy('xp', 'desc')
+      .limit(10)
+      .onSnapshot(snapshot => {
+          leaderboardList.innerHTML = ''; // Clear loading state
+          let rank = 1;
+          
+          snapshot.forEach(doc => {
+              const player = doc.data();
+              leaderboardList.innerHTML += `
+                  <div class="leaderboard-item">
+                      <span class="rank">#${rank}</span>
+                      <span class="name">${player.username}</span>
+                      <span class="xp">${player.xp} XP</span>
+                  </div>
+              `;
+              rank++;
+          });
+      });
+}
+    </script>
+
+</body>
+</html>

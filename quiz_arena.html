@@ -1,0 +1,588 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>StudyHive - Quiz Arena</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#ff416c">
+    <!-- Firebase (Auth + Firestore) -->
+    <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
+    <script src="firebase-config.js"></script>
+    <script src="idle-timeout.js"></script>
+    <script src="quiz-questions.js"></script>
+    <script src="register-sw.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        body { background-color: #1a1a1a; color: #ffffff; min-height: 100vh; display: flex; flex-direction: column; transition: 0.3s; }
+
+        /* Thin, dark scrollbars so panels feel considered rather than default-browser */
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.12); border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.2); }
+        .light-mode ::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.15); }
+        .light-mode ::-webkit-scrollbar-thumb:hover { background: rgba(0,0,0,0.25); }
+
+        /* Light Mode Variables */
+        body.light-mode { background-color: #f4f4f9; color: #333; }
+        .light-mode nav { background: rgba(255,255,255,0.85); border-bottom-color: rgba(0,0,0,0.06); }
+        .light-mode .nav-links a { color: #555; }
+        .light-mode .nav-links a:hover { color: #ff416c; }
+        .light-mode .page-header { border-bottom-color: #ddd; }
+        .light-mode .page-header h1 { color: #222; }
+        .light-mode .mode-card { background-color: #fff; border-color: #e0e0e0; box-shadow: 0 4px 10px rgba(0,0,0,0.03); }
+        .light-mode .mode-card h3 { color: #222; }
+        .light-mode .mode-card p { color: #666; }
+
+        /* Navigation */
+        nav { background: rgba(13, 13, 15, 0.85); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); padding: 18px 40px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(255,255,255,0.06); position: sticky; top: 0; z-index: 50; }
+        .logo { font-size: 24px; font-weight: 800; letter-spacing: -0.3px; background: linear-gradient(to right, #ff4b2b, #ff416c); background-clip: text; -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .nav-links a { color: #ccc; text-decoration: none; margin-left: 20px; font-size: 14px; font-weight: 500; transition: color 0.2s; }
+        .nav-links a:hover { color: #ff416c; }
+
+        /* Layout */
+        .container { flex: 1; padding: 40px; max-width: 1000px; margin: 0 auto; width: 100%; display: flex; flex-direction: column; }
+        
+        .page-header { margin-bottom: 40px; padding-bottom: 15px; border-bottom: 1px solid #333; display: flex; justify-content: space-between; align-items: flex-end; }
+        .page-header h1 { font-size: 28px; background: linear-gradient(to right, #ff4b2b, #ff416c); background-clip: text; -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .page-header p { color: #aaa; font-size: 14px; margin-top: 5px; }
+        .back-btn { background: #222; color: #fff; border: 1px solid #444; padding: 8px 15px; border-radius: 5px; text-decoration: none; font-size: 12px; transition: 0.3s; }
+        .back-btn:hover { background: #ff416c; border-color: #ff416c; }
+
+        /* Game Modes Grid */
+        .modes-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 30px; margin-top: 20px; }
+        
+        .mode-card { 
+            background-color: #222; 
+            border: 2px solid #333; 
+            border-radius: 12px; 
+            padding: 30px 25px; 
+            text-align: center; 
+            transition: all 0.3s ease; 
+            cursor: pointer; 
+            position: relative;
+            overflow: hidden;
+        }
+        
+        @keyframes cardIn { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: translateY(0); } }
+        .mode-card { animation: cardIn 0.45s ease backwards; }
+        .modes-grid .mode-card:nth-child(2) { animation-delay: 0.06s; }
+        .modes-grid .mode-card:nth-child(3) { animation-delay: 0.12s; }
+
+        /* Hover Effects */
+        .mode-card:hover { transform: translateY(-10px); }
+        .mode-card#mode-random:hover { border-color: #00c3ff; box-shadow: 0 10px 20px rgba(0, 195, 255, 0.15); }
+        .mode-card#mode-1v1:hover { border-color: #ff416c; box-shadow: 0 10px 20px rgba(255, 65, 108, 0.15); }
+        .mode-card#mode-custom:hover { border-color: #25D366; box-shadow: 0 10px 20px rgba(37, 211, 102, 0.15); }
+
+        .mode-icon { font-size: 45px; margin-bottom: 20px; }
+        #mode-random .mode-icon { color: #00c3ff; }
+        #mode-1v1 .mode-icon { color: #ff416c; }
+        #mode-custom .mode-icon { color: #25D366; }
+
+        .mode-card h3 { font-size: 22px; margin-bottom: 15px; }
+        .mode-card p { font-size: 14px; color: #aaa; line-height: 1.5; margin-bottom: 20px; }
+        
+        .play-btn { 
+            background: transparent; 
+            color: #fff; 
+            border: 1px solid #555; 
+            padding: 10px 25px; 
+            border-radius: 25px; 
+            font-weight: bold; 
+            font-size: 14px; 
+            transition: 0.3s;
+            width: 100%;
+        }
+
+        /* --- Modal Popup Styles --- */
+        .modal-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0, 0, 0, 0.7); display: none;
+            justify-content: center; align-items: center; z-index: 1000;
+        }
+        .modal {
+            background-color: #222; border: 1px solid #333; border-radius: 12px;
+            padding: 30px; width: 90%; max-width: 400px; position: relative;
+        }
+        .close-btn {
+            position: absolute; top: 15px; right: 20px; font-size: 20px;
+            color: #aaa; cursor: pointer; transition: 0.3s;
+        }
+        .close-btn:hover { color: #ff416c; }
+        .modal h2 { margin-bottom: 20px; color: #fff; font-size: 20px; }
+        
+        .modal-section { margin-bottom: 25px; }
+        .modal-section label { display: block; margin-bottom: 8px; font-size: 14px; color: #ddd; }
+        .modal-select, .modal-input {
+            width: 100%; padding: 12px; border-radius: 8px; border: 1px solid #444;
+            background-color: #111; color: #fff; margin-bottom: 10px; outline: none;
+        }
+        .modal-btn {
+            width: 100%; padding: 12px; border-radius: 8px; border: none;
+            background-color: #25D366; color: #000; font-weight: bold; cursor: pointer; transition: 0.3s;
+        }
+        .modal-btn:hover { background-color: #1ebc5a; }
+        
+        /* Code Generator Display */
+        .code-display-group { display: flex; gap: 10px; margin-top: 10px; }
+        .code-display { 
+            flex: 1; padding: 12px; border-radius: 8px; background: #333; 
+            border: 1px dashed #555; text-align: center; font-family: monospace; 
+            font-size: 18px; letter-spacing: 2px; 
+        }
+        .copy-btn { padding: 0 15px; border-radius: 8px; border: none; background: #ff416c; color: white; cursor: pointer; }
+        
+        /* Light Mode Adjustments */
+        .light-mode .modal { background-color: #fff; border-color: #ddd; }
+        .light-mode .modal h2 { color: #222; }
+        .light-mode .modal-section label { color: #555; }
+        .light-mode .modal-select, .light-mode .modal-input { background-color: #f9f9f9; border-color: #ccc; color: #333; }
+        .light-mode .code-display { background: #eee; border-color: #bbb; color: #222; }
+
+        /* 1v1 Challenge: contact picker rows */
+        .challenge-contact-row {
+            display: flex; align-items: center; gap: 12px; padding: 10px;
+            border-radius: 8px; margin-bottom: 6px; background-color: #1a1a1a;
+        }
+        .challenge-avatar {
+            width: 34px; height: 34px; border-radius: 50%; flex-shrink: 0;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 12px; font-weight: bold; color: #fff;
+        }
+        .challenge-send-btn {
+            background-color: #ff416c; color: #fff; border: none; padding: 7px 14px;
+            border-radius: 15px; font-size: 12px; font-weight: bold; cursor: pointer; transition: 0.2s;
+        }
+        .challenge-send-btn:hover { background-color: #e6335c; }
+        .challenge-send-btn:disabled { opacity: 0.5; cursor: default; }
+
+        /* Incoming Challenges banner */
+        .challenges-section { margin-bottom: 25px; }
+        .challenges-section h3 { font-size: 15px; margin-bottom: 12px; color: #fff; }
+        .challenge-item {
+            display: flex; align-items: center; gap: 12px; padding: 14px 16px;
+            background-color: #222; border: 1px solid #333; border-radius: 10px; margin-bottom: 8px;
+        }
+        .light-mode .challenge-contact-row { background-color: #f4f4f4; }
+        .light-mode .challenge-item { background-color: #fff; border-color: #e0e0e0; }
+        .challenge-accept-btn, .challenge-decline-btn {
+            border: none; padding: 8px 16px; border-radius: 15px; font-size: 12px; font-weight: bold; cursor: pointer; transition: 0.2s;
+        }
+        .challenge-accept-btn { background-color: #25D366; color: #000; }
+        .challenge-accept-btn:hover { background-color: #1ebc5a; }
+        .challenge-decline-btn { background-color: #333; color: #ff4b2b; }
+        .challenge-decline-btn:hover { background-color: #3a3a3a; }
+        
+        #mode-random:hover .play-btn { background: #00c3ff; border-color: #00c3ff; color: #000; }
+        #mode-1v1:hover .play-btn { background: #ff416c; border-color: #ff416c; }
+        #mode-custom:hover .play-btn { background: #25D366; border-color: #25D366; color: #000; }
+
+        /* --- Mobile: shrink the nav so the logo + links fit on one line instead of wrapping --- */
+        @media (max-width: 480px) {
+            nav { padding: 14px 18px; }
+            .logo { font-size: 19px; }
+            .nav-links a { margin-left: 12px; font-size: 12px; }
+            .container { padding: 20px; }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Navigation (rendered by app.js) -->
+    <div id="navbar-container"></div>
+
+    <div class="container">
+        <div class="page-header">
+            <div>
+                <h1>Quiz Arena</h1>
+                <p><i class="fas fa-trophy" style="color: #ffb300;"></i> Test your engineering knowledge against your coursemates.</p>
+            </div>
+            <a href="home.html" class="back-btn"><i class="fas fa-arrow-left"></i> Back to Dash</a>
+        </div>
+
+        <!-- Incoming Quiz Challenges -->
+        <div class="challenges-section" id="challengesSection" style="display: none;">
+            <h3><i class="fas fa-bolt" style="color: #ff416c;"></i> Quiz Challenges</h3>
+            <div id="challengesList"></div>
+        </div>
+
+        <div class="modes-grid">
+            
+            <!-- Mode 1: Randoms -->
+            <div class="mode-card" id="mode-random" onclick="selectMode('random')">
+                <i class="fas fa-globe mode-icon"></i>
+                <h3>Randoms</h3>
+                <p>Match up instantly with a random coursemate online. Fast-paced, random topics, winner takes all.</p>
+                <button class="play-btn">Find Match</button>
+            </div>
+
+            <!-- Mode 2: 1v1 -->
+            <div class="mode-card" id="mode-1v1" onclick="selectMode('1v1')">
+                <i class="fas fa-user-ninja mode-icon"></i>
+                <h3>1v1 Challenge</h3>
+                <p>Call out a specific friend from your contact list. Settle the debate on who really knows GET209.</p>
+                <button class="play-btn">Challenge Friend</button>
+            </div>
+
+            <!-- Mode 3: Custom -->
+            <div class="mode-card" id="mode-custom" onclick="selectMode('custom')">
+                <i class="fas fa-sliders-h mode-icon"></i>
+                <h3>Custom Room</h3>
+                <p>Create a private room with a code. Handpick the course, set the timer, and invite your study group.</p>
+                <button class="play-btn">Create Room</button>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- Custom Room Modal -->
+    <div class="modal-overlay" id="customRoomModal">
+        <div class="modal">
+            <i class="fas fa-times close-btn" onclick="closeModal()"></i>
+            <h2><i class="fas fa-sliders-h" style="color: #25D366;"></i> Custom Quiz Room</h2>
+            
+            <!-- Top Half: Create Room -->
+            <div class="modal-section" style="border-bottom: 1px solid #444; padding-bottom: 20px;">
+                <label>1. Select Course to Generate Room</label>
+                <select class="modal-select" id="courseSelect">
+                    <option value="ENT211">ENT211 - Entrepreneurship & Innovation</option>
+                    <option value="GET201">GET201 - Applied Electricity I</option>
+                    <option value="GET203">GET203 - Engineering Graphics II</option>
+                    <option value="GET205">GET205 - Fluid Mechanics</option>
+                    <option value="GET207">GET207 - Applied Mechanics</option>
+                    <option value="GET209">GET209 - Engineering Math I</option>
+                    <option value="GET211">GET211 - Software Engineering</option>
+                    <option value="OOU-EEE201">OOU-EEE201 - Lab & Installation</option>
+                </select>
+                <label style="margin-top: 15px;">Number of Questions</label>
+                <select class="modal-select" id="questionCountSelect">
+                    <option value="5">5 Questions</option>
+                    <option value="8" selected>8 Questions</option>
+                    <option value="10">10 Questions</option>
+                    <option value="15">15 Questions</option>
+                    <option value="20">20 Questions</option>
+                </select>
+                <button class="modal-btn" onclick="generateCode()">Generate Room Code</button>
+                
+                <div class="code-display-group" id="codeGroup" style="display: none;">
+                    <div class="code-display" id="generatedCode">------</div>
+                    <button class="copy-btn" onclick="copyCode()"><i class="fas fa-copy"></i></button>
+                </div>
+                <button class="modal-btn" id="enterRoomBtn" style="display: none; background-color: #00c3ff; margin-top: 10px;" onclick="enterGeneratedRoom()">Enter Room &amp; Wait for Opponent</button>
+            </div>
+
+            <!-- Bottom Half: Join Room -->
+            <div class="modal-section" style="margin-bottom: 0;">
+                <label>2. Or Join an Existing Room</label>
+                <input type="text" class="modal-input" id="joinCodeInput" placeholder="Enter 6-character code" maxlength="6" style="text-transform: uppercase;">
+                <button class="modal-btn" style="background-color: #00c3ff;" onclick="joinRoom()">Join Match</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 1v1 Challenge Modal -->
+    <div class="modal-overlay" id="challengeModal">
+        <div class="modal">
+            <i class="fas fa-times close-btn" onclick="closeChallengeModal()"></i>
+            <h2><i class="fas fa-user-ninja" style="color: #ff416c;"></i> Challenge a Contact</h2>
+
+            <div class="modal-section">
+                <label>Course</label>
+                <select class="modal-select" id="challengeCourseSelect">
+                    <option value="ENT211">ENT211 - Entrepreneurship & Innovation</option>
+                    <option value="GET201">GET201 - Applied Electricity I</option>
+                    <option value="GET203">GET203 - Engineering Graphics II</option>
+                    <option value="GET205">GET205 - Fluid Mechanics</option>
+                    <option value="GET207">GET207 - Applied Mechanics</option>
+                    <option value="GET209">GET209 - Engineering Math I</option>
+                    <option value="GET211">GET211 - Software Engineering</option>
+                    <option value="OOU-EEE201">OOU-EEE201 - Lab & Installation</option>
+                </select>
+                <label style="margin-top: 15px;">Number of Questions</label>
+                <select class="modal-select" id="challengeQuestionCountSelect">
+                    <option value="5">5 Questions</option>
+                    <option value="8" selected>8 Questions</option>
+                    <option value="10">10 Questions</option>
+                    <option value="15">15 Questions</option>
+                    <option value="20">20 Questions</option>
+                </select>
+            </div>
+
+            <div class="modal-section" style="margin-bottom: 0;">
+                <label>Pick a contact to challenge</label>
+                <div id="challengeContactsList"></div>
+            </div>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+    <script>
+        const userData = requireAuth();
+        const myEmail = userData ? userData.email : null;
+        const myName = userData ? (userData.name || userData.email) : 'Student';
+
+        function escapeHtml(str) {
+            const div = document.createElement('div');
+            div.textContent = str == null ? '' : String(str);
+            return div.innerHTML;
+        }
+
+        const AVATAR_COLORS = ['#ff416c', '#25D366', '#00c3ff', '#ffb300', '#8e44ad', '#e67e22'];
+        function colorForEmail(email) {
+            let hash = 0;
+            const key = email || '';
+            for (let i = 0; i < key.length; i++) hash = key.charCodeAt(i) + ((hash << 5) - hash);
+            return AVATAR_COLORS[Math.abs(hash) % AVATAR_COLORS.length];
+        }
+        function initialsFor(name, email) {
+            const source = (name || email || '?').trim();
+            return source.split(/\s+/).map(w => w[0]).slice(0, 2).join('').toUpperCase() || '?';
+        }
+
+        // Small self-contained row builders, same pattern as social.html's create*Row functions:
+        // build and return one element from data, caller decides where it gets mounted.
+        function createChallengeContactRow(contact, onSend) {
+            const row = document.createElement('div');
+            row.className = 'challenge-contact-row';
+            row.innerHTML = `
+                <div class="challenge-avatar" style="background: linear-gradient(145deg, ${colorForEmail(contact.friend_email)}, #16161a);">${escapeHtml(initialsFor(contact.friend_name, contact.friend_email))}</div>
+                <span style="flex: 1; font-size: 14px;">${escapeHtml(contact.friend_name)}</span>
+                <button class="challenge-send-btn">Challenge</button>
+            `;
+            const btn = row.querySelector('.challenge-send-btn');
+            btn.addEventListener('click', () => onSend(btn));
+            return row;
+        }
+
+        function createIncomingChallengeRow(challenge, onAccept, onDecline) {
+            const row = document.createElement('div');
+            row.className = 'challenge-item';
+            row.innerHTML = `
+                <div class="challenge-avatar" style="background: linear-gradient(145deg, ${colorForEmail(challenge.from_email)}, #16161a); width: 42px; height: 42px; font-size: 14px;">${escapeHtml(initialsFor(challenge.from_name, challenge.from_email))}</div>
+                <div style="flex: 1;">
+                    <div style="font-weight: bold; font-size: 14px;">${escapeHtml(challenge.from_name)}</div>
+                    <div style="font-size: 12px; color: #888; margin-top: 3px;">Challenged you to a ${escapeHtml(challenge.course)} quiz</div>
+                </div>
+                <button class="challenge-accept-btn">Accept</button>
+                <button class="challenge-decline-btn">Decline</button>
+            `;
+            row.querySelector('.challenge-accept-btn').addEventListener('click', onAccept);
+            row.querySelector('.challenge-decline-btn').addEventListener('click', onDecline);
+            return row;
+        }
+
+        function pickRandomQuestions(count) {
+            const pool = [...QUIZ_QUESTION_BANK];
+            for (let i = pool.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [pool[i], pool[j]] = [pool[j], pool[i]];
+            }
+            return pool.slice(0, Math.min(count, pool.length));
+        }
+
+        // --- Modal & Matchmaking Logic ---
+        const modal = document.getElementById('customRoomModal');
+        let generatedRoomCode = null;
+
+        function selectMode(mode) {
+            if (mode === 'random') {
+                // Sends you to live_quiz.html, which finds a waiting opponent or opens a new room for one
+                window.location.href = 'live_quiz.html';
+            } else if (mode === '1v1') {
+                openChallengeModal();
+            } else if (mode === 'custom') {
+                modal.style.display = 'flex';
+            }
+        }
+
+        function closeModal() {
+            modal.style.display = 'none';
+            document.getElementById('codeGroup').style.display = 'none';
+            document.getElementById('enterRoomBtn').style.display = 'none';
+            document.getElementById('joinCodeInput').value = '';
+            generatedRoomCode = null;
+        }
+
+        async function generateCode() {
+            if (!userData) {
+                alert('Please sign in first.');
+                return;
+            }
+
+            const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+            let code = '';
+            for (let i = 0; i < 6; i++) {
+                code += chars.charAt(Math.floor(Math.random() * chars.length));
+            }
+
+            const course = document.getElementById('courseSelect').value;
+            const questionCount = parseInt(document.getElementById('questionCountSelect').value, 10);
+
+            try {
+                await db.collection('quizRooms').doc(code).set({
+                    status: 'waiting',
+                    mode: 'custom',
+                    course: course,
+                    players: [{ email: myEmail, name: myName }],
+                    scores: { A: 0, B: 0 },
+                    questions: pickRandomQuestions(questionCount),
+                    currentQuestionIndex: -1,
+                    currentAnswers: { A: null, B: null },
+                    questionStartedAt: null,
+                    createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+                    createdBy: myEmail
+                });
+
+                generatedRoomCode = code;
+                document.getElementById('generatedCode').textContent = code;
+                document.getElementById('codeGroup').style.display = 'flex';
+                document.getElementById('enterRoomBtn').style.display = 'block';
+            } catch (error) {
+                alert('Could not create the room. ' + error.message);
+            }
+        }
+
+        function copyCode() {
+            const code = document.getElementById('generatedCode').textContent;
+            navigator.clipboard.writeText(code);
+            alert("Room code copied to clipboard! Send it to your study group via Hive Social.");
+        }
+
+        function enterGeneratedRoom() {
+            if (!generatedRoomCode) return;
+            window.location.href = `live_quiz.html?room=${generatedRoomCode}`;
+        }
+
+        function joinRoom() {
+            const code = document.getElementById('joinCodeInput').value.toUpperCase();
+            if (code.length === 6) {
+                window.location.href = `live_quiz.html?room=${code}`;
+            } else {
+                alert("Please enter a valid 6-character room code.");
+            }
+        }
+
+        // --- 1v1 Challenge: contact picker + send ---
+        const challengeModal = document.getElementById('challengeModal');
+        const challengeContactsList = document.getElementById('challengeContactsList');
+
+        function closeChallengeModal() {
+            challengeModal.style.display = 'none';
+        }
+        challengeModal.addEventListener('click', (e) => { if (e.target === challengeModal) closeChallengeModal(); });
+
+        async function openChallengeModal() {
+            if (!userData) {
+                alert('Please sign in first.');
+                return;
+            }
+            challengeModal.style.display = 'flex';
+            challengeContactsList.innerHTML = '<div style="color: #888; font-size: 13px; text-align: center; padding: 15px 0;">Loading contacts...</div>';
+
+            try {
+                const snap = await db.collection('contacts').where('user_email', '==', myEmail).get();
+                if (snap.empty) {
+                    challengeContactsList.innerHTML = '<div style="color: #888; font-size: 13px; text-align: center; padding: 15px 0;">Add some contacts in Hive Social first!</div>';
+                    return;
+                }
+
+                challengeContactsList.innerHTML = '';
+                snap.forEach((doc) => {
+                    const contact = doc.data();
+                    challengeContactsList.appendChild(createChallengeContactRow(contact, (btn) => sendChallenge(contact, btn)));
+                });
+            } catch (error) {
+                challengeContactsList.innerHTML = `<div style="color: #ff4b2b; font-size: 13px;">Could not load contacts: ${escapeHtml(error.message)}</div>`;
+            }
+        }
+
+        async function sendChallenge(contact, btn) {
+            btn.disabled = true;
+            btn.textContent = 'Sending...';
+
+            const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+            let code = '';
+            for (let i = 0; i < 6; i++) code += chars.charAt(Math.floor(Math.random() * chars.length));
+
+            const course = document.getElementById('challengeCourseSelect').value;
+            const questionCount = parseInt(document.getElementById('challengeQuestionCountSelect').value, 10);
+
+            try {
+                await db.collection('quizRooms').doc(code).set({
+                    status: 'waiting',
+                    mode: '1v1',
+                    course: course,
+                    players: [{ email: myEmail, name: myName }],
+                    scores: { A: 0, B: 0 },
+                    questions: pickRandomQuestions(questionCount),
+                    currentQuestionIndex: -1,
+                    currentAnswers: { A: null, B: null },
+                    questionStartedAt: null,
+                    createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+                    createdBy: myEmail
+                });
+
+                await db.collection('quizChallenges').add({
+                    from_email: myEmail,
+                    from_name: myName,
+                    to_email: contact.friend_email,
+                    to_name: contact.friend_name,
+                    course: course,
+                    roomCode: code,
+                    status: 'pending',
+                    createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                });
+
+                closeChallengeModal();
+                window.location.href = `live_quiz.html?room=${code}`;
+            } catch (error) {
+                alert('Could not send the challenge. ' + error.message);
+                btn.disabled = false;
+                btn.textContent = 'Challenge';
+            }
+        }
+
+        // --- Incoming Quiz Challenges (live) ---
+        const challengesSection = document.getElementById('challengesSection');
+        const challengesList = document.getElementById('challengesList');
+
+        if (userData) {
+            db.collection('quizChallenges')
+                .where('to_email', '==', myEmail)
+                .where('status', '==', 'pending')
+                .onSnapshot((snapshot) => {
+                    challengesSection.style.display = snapshot.empty ? 'none' : 'block';
+                    challengesList.innerHTML = '';
+
+                    snapshot.forEach((doc) => {
+                        const challenge = doc.data();
+                        const row = createIncomingChallengeRow(
+                            challenge,
+                            () => respondToChallenge(doc.id, challenge, true),
+                            () => respondToChallenge(doc.id, challenge, false)
+                        );
+                        challengesList.appendChild(row);
+                    });
+                });
+        }
+
+        async function respondToChallenge(challengeId, challenge, accept) {
+            try {
+                if (accept) {
+                    await db.collection('quizChallenges').doc(challengeId).update({ status: 'accepted' });
+                    window.location.href = `live_quiz.html?room=${challenge.roomCode}`;
+                } else {
+                    await db.collection('quizChallenges').doc(challengeId).update({ status: 'declined' });
+                }
+            } catch (error) {
+                alert('Could not respond to the challenge. ' + error.message);
+            }
+        }
+    </script>
+</body>
+</html>

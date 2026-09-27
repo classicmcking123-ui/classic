@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>StudyHive - Past Questions</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#ff416c">
+    <script src="idle-timeout.js"></script>
+    <script src="register-sw.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        body { background-color: #1a1a1a; color: #ffffff; min-height: 100vh; display: flex; flex-direction: column; transition: 0.3s; }
+
+        /* Light Mode Variables */
+        body.light-mode { background-color: #f4f4f9; color: #333; }
+        .light-mode nav { background-color: #fff; box-shadow: 0 4px 10px rgba(0,0,0,0.05); }
+        .light-mode .nav-links a { color: #555; }
+        .light-mode .nav-links a:hover { color: #ff416c; }
+        .light-mode .page-header { border-bottom-color: #ddd; }
+        .light-mode .empty-state { background-color: #fff; border-color: #e0e0e0; }
+        .light-mode .empty-state h2 { color: #222; }
+        .light-mode .empty-state p { color: #666; }
+
+        /* Navigation */
+        nav { background-color: #111; padding: 20px 40px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 4px 10px rgba(0, 0, 0, 0.5); }
+        .logo { font-size: 24px; font-weight: bold; background: linear-gradient(to right, #ff4b2b, #ff416c); background-clip: text; -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .nav-links a { color: #fff; text-decoration: none; margin-left: 20px; font-size: 14px; transition: color 0.3s; }
+        .nav-links a:hover { color: #ff416c; }
+
+        /* Layout */
+        .container { flex: 1; padding: 40px; max-width: 900px; margin: 0 auto; width: 100%; display: flex; flex-direction: column; }
+
+        .page-header { margin-bottom: 30px; padding-bottom: 15px; border-bottom: 1px solid #333; display: flex; justify-content: space-between; align-items: flex-end; }
+        .page-header h1 { font-size: 24px; color: #ff416c; }
+        .page-header p { color: #aaa; font-size: 14px; margin-top: 5px; }
+        .back-btn { background: #222; color: #fff; border: 1px solid #444; padding: 8px 15px; border-radius: 5px; text-decoration: none; font-size: 12px; transition: 0.3s; }
+        .back-btn:hover { background: #ff416c; border-color: #ff416c; }
+
+        /* Empty State */
+        .empty-state { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; background-color: #222; border: 1px dashed #444; border-radius: 12px; padding: 60px 30px; }
+        .empty-state i { font-size: 48px; color: #ff416c; margin-bottom: 20px; }
+        .empty-state h2 { font-size: 20px; margin-bottom: 10px; }
+        .empty-state p { color: #aaa; font-size: 14px; max-width: 400px; line-height: 1.6; }
+
+        /* --- Mobile: shrink the nav so the logo + links fit on one line instead of wrapping --- */
+        @media (max-width: 480px) {
+            nav { padding: 14px 18px; }
+            .logo { font-size: 19px; }
+            .nav-links a { margin-left: 12px; font-size: 12px; }
+            .container { padding: 20px; }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Navigation (rendered by app.js) -->
+    <div id="navbar-container"></div>
+
+    <div class="container">
+        <div class="page-header">
+            <div>
+                <h1>Past Questions</h1>
+                <p><i class="fas fa-file-alt"></i> Practice with previous examination papers.</p>
+            </div>
+            <a href="home.html" class="back-btn"><i class="fas fa-arrow-left"></i> Back to Dash</a>
+        </div>
+
+        <div class="empty-state">
+            <i class="fas fa-tools"></i>
+            <h2>Coming Soon</h2>
+            <p>We're building out the Past Questions archive. Check back soon, or explore Course Outlines and Notes in the meantime.</p>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>

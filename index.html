@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>StudyHive</title>
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#ff416c">
+    <script src="register-sw.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        body { background-color: #1a1a1a; color: #fff; min-height: 100vh; display: flex; align-items: center; justify-content: center; }
+        .logo { font-size: 28px; font-weight: bold; background: linear-gradient(to right, #ff4b2b, #ff416c); background-clip: text; -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+    </style>
+</head>
+<body>
+    <div class="logo">StudyHive</div>
+    <script>
+        // Send logged-in users to the dashboard, everyone else to sign in
+        const isLoggedIn = !!localStorage.getItem('studyHiveUser');
+        window.location.replace(isLoggedIn ? 'home.html' : 'login_page.htm');
+    </script>
+</body>
+</html>

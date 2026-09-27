@@ -1,0 +1,27 @@
+{
+    "name": "StudyHive",
+    "short_name": "StudyHive",
+    "description": "Course outlines, notes, quizzes, and study social for engineering students",
+    "id": "/index.html",
+    "start_url": "/index.html",
+    "scope": "/",
+    "display": "standalone",
+    "background_color": "#1a1a1a",
+    "theme_color": "#ff416c",
+    "icons": [
+        { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable" },
+        { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+    ],
+    "shortcuts": [
+        {
+            "name": "Course Outlines",
+            "url": "/course_outlines.html",
+            "description": "View your syllabus offline"
+        },
+        {
+            "name": "Notes & Tips",
+            "url": "/notes.html",
+            "description": "View saved notes offline"
+        }
+    ]
+}

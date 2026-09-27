@@ -1,0 +1,1656 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>StudyHive - Hive Social</title>
+    <!-- FontAwesome for Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#ff416c">
+    <!-- Firebase (Auth + Firestore) -->
+    <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-storage-compat.js"></script>
+    <script src="firebase-config.js"></script>
+    <script src="idle-timeout.js"></script>
+    <script src="register-sw.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background: radial-gradient(circle at 20% 0%, #23232d 0%, #16161a 45%, #101012 100%);
+            color: #ffffff;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Thin, dark scrollbars everywhere so panels feel considered rather than default-browser */
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.12); border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.2); }
+
+        /* Navigation Bar */
+        nav {
+            background: rgba(13, 13, 15, 0.85);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            padding: 18px 40px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid rgba(255,255,255,0.06);
+            position: sticky;
+            top: 0;
+            z-index: 50;
+        }
+
+        .logo {
+            font-size: 24px;
+            font-weight: 800;
+            letter-spacing: -0.3px;
+            background: linear-gradient(to right, #ff4b2b, #ff416c);
+            background-clip: text;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .nav-links a {
+            color: #ccc;
+            text-decoration: none;
+            margin-left: 24px;
+            font-size: 14px;
+            font-weight: 500;
+            transition: color 0.2s;
+        }
+
+        .nav-links a:hover { color: #ff416c; }
+
+        /* Social Layout Container */
+        .container {
+            flex: 1;
+            padding: 32px 40px;
+            max-width: 1200px;
+            margin: 0 auto;
+            width: 100%;
+            display: flex;
+            gap: 22px;
+            height: calc(100vh - 76px);
+        }
+
+        /* Sidebar Navigation */
+        .social-sidebar {
+            width: 280px;
+            background: linear-gradient(165deg, #212127, #1a1a1f);
+            border-radius: 16px;
+            border: 1px solid rgba(255,255,255,0.06);
+            box-shadow: 0 16px 40px rgba(0,0,0,0.4);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .social-sidebar h2 {
+            padding: 22px 20px;
+            font-size: 17px;
+            font-weight: 700;
+            letter-spacing: 0.2px;
+            color: #fff;
+            border-bottom: 1px solid rgba(255,255,255,0.06);
+            background: linear-gradient(135deg, rgba(255,65,108,0.12), transparent 70%);
+        }
+
+        .social-menu { list-style: none; flex: 1; padding: 10px;}
+        .social-menu li { margin-bottom: 2px; }
+        .social-menu li a {
+            display: flex;
+            align-items: center;
+            padding: 13px 14px;
+            color: #999;
+            text-decoration: none;
+            font-size: 14px;
+            font-weight: 500;
+            border-radius: 10px;
+            transition: all 0.2s ease;
+        }
+        .social-menu li a:hover { background-color: rgba(255,255,255,0.05); color: #fff; }
+        .social-menu li a.active {
+            background: linear-gradient(135deg, rgba(37,211,102,0.16), rgba(37,211,102,0.04));
+            color: #25D366;
+            font-weight: 700;
+        }
+        .social-menu li a i { margin-right: 14px; font-size: 16px; width: 20px; text-align: center; }
+
+        /* Main Content Area */
+        .social-main {
+            flex: 1;
+            background: linear-gradient(165deg, #1c1c21, #17171b);
+            border-radius: 16px;
+            border: 1px solid rgba(255,255,255,0.06);
+            box-shadow: 0 16px 40px rgba(0,0,0,0.4);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        /* SECTION 1: CHAT INTERFACE */
+        .chat-layout { display: flex; height: 100%; }
+        .contact-list {
+            width: 300px;
+            border-right: 1px solid rgba(255,255,255,0.06);
+            background: rgba(0,0,0,0.15);
+            overflow-y: auto;
+        }
+
+        .contact-item {
+            display: flex;
+            align-items: center;
+            padding: 13px 15px;
+            margin: 3px 8px;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: 0.15s ease;
+        }
+        .contact-item:hover { background-color: rgba(255,255,255,0.05); }
+        .contact-item.active { background: linear-gradient(135deg, rgba(37,211,102,0.14), rgba(37,211,102,0.03)); box-shadow: inset 0 0 0 1px rgba(37,211,102,0.25); }
+        .contact-avatar {
+            width: 44px; height: 44px; border-radius: 50%; margin-right: 14px; flex-shrink: 0;
+            background: linear-gradient(145deg, #444, #2a2a2a);
+            display: flex; align-items: center; justify-content: center;
+            font-weight: 700; font-size: 14px; color: #fff;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+        }
+        .contact-name { font-weight: 600; font-size: 14px; }
+        .contact-preview { font-size: 12px; color: #888; margin-top: 3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+        .unread-badge {
+            background-color: #25D366; color: #062b16; font-size: 11px; font-weight: bold;
+            min-width: 18px; height: 18px; border-radius: 9px; padding: 0 5px;
+            display: flex; align-items: center; justify-content: center; margin-left: auto; flex-shrink: 0;
+        }
+        .msg-tick { margin-left: 6px; font-size: 11px; opacity: 0.85; }
+        .typing-indicator { padding: 0 20px 10px; font-size: 12px; color: #25D366; font-style: italic; min-height: 18px; }
+
+        /* Add Contact Modal */
+        .modal-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(8, 8, 10, 0.75); backdrop-filter: blur(3px); display: none;
+            justify-content: center; align-items: center; z-index: 1000;
+        }
+        .modal {
+            background: linear-gradient(165deg, #24242b, #1c1c22); border: 1px solid rgba(255,255,255,0.08); border-radius: 18px;
+            padding: 26px; width: 90%; max-width: 400px; position: relative;
+            box-shadow: 0 24px 60px rgba(0,0,0,0.5);
+        }
+        .close-btn { position: absolute; top: 18px; right: 20px; font-size: 18px; color: #888; cursor: pointer; transition: 0.2s; }
+        .close-btn:hover { color: #25D366; transform: rotate(90deg); }
+        .modal h2 { margin-bottom: 18px; color: #fff; font-size: 18px; font-weight: 700; }
+        .search-input {
+            width: 100%; padding: 12px 16px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.08);
+            background-color: #17171b; color: #fff; outline: none; margin-bottom: 15px; transition: border-color 0.2s;
+        }
+        .search-input:focus { border-color: rgba(37,211,102,0.5); }
+        .search-results { max-height: 260px; overflow-y: auto; display: flex; flex-direction: column; gap: 4px; }
+        .search-result-item {
+            display: flex; align-items: center; padding: 10px; border-radius: 10px;
+            cursor: pointer; transition: 0.15s;
+        }
+        .search-result-item:hover { background-color: rgba(255,255,255,0.05); }
+        .search-result-item .contact-avatar { width: 38px; height: 38px; margin-right: 12px; font-size: 12px; }
+        .search-hint { color: #888; font-size: 13px; text-align: center; padding: 15px 0; }
+
+        /* Friend Requests */
+        .request-item {
+            display: flex; align-items: center; gap: 12px; padding: 15px 16px;
+            background: linear-gradient(135deg, rgba(255,255,255,0.04), rgba(255,255,255,0.01));
+            border: 1px solid rgba(255,255,255,0.06); border-radius: 14px; margin-bottom: 10px;
+        }
+        .request-item .contact-name { font-size: 15px; }
+        .request-item .contact-preview { margin-top: 3px; }
+        .request-btn { border: none; width: 36px; height: 36px; border-radius: 50%; cursor: pointer; font-size: 14px; transition: 0.2s; flex-shrink: 0; }
+        .request-accept-btn { background: linear-gradient(135deg, #2ee579, #1fae63); color: #062b16; }
+        .request-accept-btn:hover { transform: scale(1.08); }
+        .request-decline-btn { background-color: rgba(255,255,255,0.06); color: #ff6b6b; }
+        .request-decline-btn:hover { background-color: rgba(255,75,43,0.15); }
+
+        .chat-window {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            background: radial-gradient(circle at 50% 0%, #17171b 0%, #131316 100%);
+        }
+        .chat-header {
+            padding: 16px 22px;
+            background: rgba(255,255,255,0.02);
+            border-bottom: 1px solid rgba(255,255,255,0.06);
+            font-weight: 700;
+            font-size: 15px;
+            display: flex;
+            align-items: center;
+        }
+        .chat-messages {
+            flex: 1;
+            padding: 22px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+        .message { max-width: 62%; padding: 11px 15px; border-radius: 16px; font-size: 14px; line-height: 1.45; box-shadow: 0 2px 8px rgba(0,0,0,0.2); }
+        .message.received { background: #262630; align-self: flex-start; border-bottom-left-radius: 4px; }
+        .message.sent { background: linear-gradient(135deg, #1fb787, #128C7E); color: white; align-self: flex-end; border-bottom-right-radius: 4px; }
+        .chat-input {
+            padding: 16px 20px;
+            background: rgba(255,255,255,0.02);
+            border-top: 1px solid rgba(255,255,255,0.06);
+            display: flex;
+            gap: 10px;
+        }
+        .chat-input input {
+            flex: 1; padding: 12px 18px; border-radius: 24px; border: 1px solid rgba(255,255,255,0.08);
+            background-color: #24242b; color: white; outline: none; transition: border-color 0.2s;
+        }
+        .chat-input input:focus { border-color: rgba(37,211,102,0.5); }
+        .chat-input button {
+            background: linear-gradient(135deg, #2ee579, #1fae63); color: #062b16; border: none;
+            width: 42px; height: 42px; border-radius: 50%; cursor: pointer; box-shadow: 0 4px 12px rgba(37,211,102,0.3);
+            transition: transform 0.15s;
+        }
+        .chat-input button:hover { transform: scale(1.06); }
+
+        /* SECTION 2 & 3: STATUS & FEED */
+        .status-container, .feed-container, .settings-container { padding: 30px; overflow-y: auto; height: 100%; }
+        .status-header, .settings-header { margin-bottom: 22px; color: #fff; font-size: 17px; font-weight: 700; border-bottom: 1px solid rgba(255,255,255,0.07); padding-bottom: 14px; }
+
+        .status-row { display: flex; gap: 16px; margin-bottom: 24px; flex-wrap: wrap; }
+        .status-card {
+            width: 122px; height: 182px; border-radius: 14px; background-color: #2a2a32;
+            display: flex; flex-direction: column; justify-content: flex-end; padding: 12px; cursor: pointer;
+            position: relative; background-size: cover; background-position: center;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.35), inset 0 0 0 2px rgba(37,211,102,0.55);
+            transition: transform 0.18s ease;
+        }
+        .status-card:hover { transform: translateY(-4px); }
+        .add-status { box-shadow: none; border: 2px dashed rgba(255,255,255,0.15); background-color: rgba(255,255,255,0.02); justify-content: center; align-items: center; color: #888; }
+        .add-status:hover { border-color: #25D366; color: #25D366; transform: translateY(-4px); }
+        .status-name { font-size: 12px; font-weight: 700; text-shadow: 1px 1px 4px rgba(0,0,0,0.9); z-index: 2; }
+
+        .feed-container { max-width: 680px; margin: 0 auto; width: 100%; }
+        .post-input-box {
+            background: linear-gradient(165deg, #202027, #1a1a1f); padding: 18px 20px; border-radius: 16px;
+            margin-bottom: 26px; border: 1px solid rgba(255,255,255,0.07);
+        }
+        .post-input-box textarea { width: 100%; background: transparent; border: none; color: white; resize: none; outline: none; font-size: 15px; margin-bottom: 12px; font-family: inherit; }
+        .post-input-box-footer { display: flex; align-items: center; justify-content: space-between; }
+        .attach-image-btn {
+            background: rgba(255,255,255,0.06); color: #ccc; border: none; width: 36px; height: 36px;
+            border-radius: 50%; cursor: pointer; font-size: 14px; transition: 0.2s;
+        }
+        .attach-image-btn:hover { background: rgba(37,211,102,0.18); color: #25D366; }
+        .post-input-box button.post-submit-btn {
+            background: linear-gradient(135deg, #ff4b2b, #ff416c); color: white; border: none; padding: 9px 22px;
+            border-radius: 22px; cursor: pointer; font-weight: 700; font-size: 13px; box-shadow: 0 4px 14px rgba(255,65,108,0.3);
+            transition: transform 0.15s;
+        }
+        .post-input-box button.post-submit-btn:hover { transform: translateY(-1px); }
+        .post-input-box button.post-submit-btn:disabled { opacity: 0.5; cursor: default; transform: none; }
+        .image-preview-wrap { position: relative; display: inline-block; margin-bottom: 12px; }
+        .image-preview-wrap[hidden] { display: none; }
+        .image-preview-wrap img { max-height: 140px; border-radius: 10px; display: block; }
+        .image-preview-remove {
+            position: absolute; top: -8px; right: -8px; background: #1a1a1a; border: 1px solid rgba(255,255,255,0.15);
+            color: #fff; width: 22px; height: 22px; border-radius: 50%; cursor: pointer; font-size: 11px;
+            display: flex; align-items: center; justify-content: center;
+        }
+
+        .public-post {
+            background: linear-gradient(165deg, #1f1f26, #191920); padding: 20px; border-radius: 16px;
+            margin-bottom: 18px; border: 1px solid rgba(255,255,255,0.06); box-shadow: 0 10px 24px rgba(0,0,0,0.25);
+        }
+        .post-header { display: flex; align-items: center; margin-bottom: 14px; }
+        .post-header .contact-avatar { width: 40px; height: 40px; font-size: 13px; }
+        .post-time { font-size: 11px; color: #777; margin-left: auto; }
+        .post-content { font-size: 14px; line-height: 1.55; color: #dcdcdc; margin-bottom: 14px; white-space: pre-wrap; }
+        .post-image { max-width: 100%; border-radius: 12px; margin-bottom: 14px; display: block; cursor: pointer; }
+        .post-actions { display: flex; gap: 20px; border-top: 1px solid rgba(255,255,255,0.06); padding-top: 13px; align-items: center; }
+        .post-actions span { color: #888; cursor: pointer; transition: 0.2s; font-size: 13px; }
+        .post-actions span:hover { color: #25D366; }
+        .post-like-btn.liked { color: #ff4b6a; }
+        .post-like-btn.liked:hover { color: #ff4b6a; }
+        .post-delete-btn { margin-left: auto; color: #555; cursor: pointer; }
+        .post-delete-btn:hover { color: #ff4b2b; }
+        .empty-feed-hint { color: #777; font-size: 13px; text-align: center; padding: 40px 0; }
+
+        .post-comments { margin-top: 14px; padding-top: 14px; border-top: 1px solid rgba(255,255,255,0.06); }
+        .comment-item { font-size: 13px; color: #ccc; margin-bottom: 8px; line-height: 1.4; }
+        .comment-item strong { color: #25D366; }
+        .comment-input-row { display: flex; gap: 8px; margin-top: 10px; }
+        .comment-input-row input {
+            flex: 1; padding: 9px 14px; border-radius: 16px; border: 1px solid rgba(255,255,255,0.08);
+            background-color: #17171b; color: #fff; outline: none; font-size: 13px;
+        }
+        .comment-input-row button { background: none; border: none; color: #25D366; cursor: pointer; font-size: 13px; font-weight: 700; }
+
+        /* Private Updates: text or image status cards, rotating gradient backgrounds when text-only */
+        .status-card-text {
+            display: flex; align-items: center; justify-content: center; text-align: center;
+            padding: 14px; font-size: 12px; font-weight: 600; color: #fff; line-height: 1.4;
+            overflow: hidden;
+        }
+        .status-card-text .status-body { flex: 1; display: -webkit-box; -webkit-line-clamp: 5; line-clamp: 5; -webkit-box-orient: vertical; overflow: hidden; }
+        .status-card-image-overlay { position: absolute; inset: 0; background: linear-gradient(transparent 40%, rgba(0,0,0,0.85)); border-radius: 12px; }
+
+        /* SECTION 4: SETTINGS CSS */
+        .settings-card {
+            background: linear-gradient(165deg, #1f1f26, #191920); padding: 24px; border-radius: 16px;
+            margin-bottom: 20px; border: 1px solid rgba(255,255,255,0.06); box-shadow: 0 10px 24px rgba(0,0,0,0.2);
+        }
+        .settings-card h4 { color: #fff; margin-bottom: 20px; font-size: 15px; font-weight: 700; display: flex; align-items: center; gap: 10px; }
+        .setting-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; font-size: 14px; color: #aaa; }
+        .setting-row:last-child { margin-bottom: 0; }
+
+        .setting-select { background: #17171b; color: #fff; border: 1px solid rgba(255,255,255,0.1); padding: 8px 12px; border-radius: 8px; outline: none; }
+        .setting-btn-danger { background: transparent; color: #ff4b2b; border: 1px solid rgba(255,75,43,0.4); padding: 8px 15px; border-radius: 20px; cursor: pointer; transition: 0.2s; font-size: 12px; }
+        .setting-btn-danger:hover { background: #ff4b2b; color: #fff; border-color: #ff4b2b; }
+
+        /* Toggle Switches */
+        .switch { position: relative; display: inline-block; width: 44px; height: 24px; }
+        .switch input { opacity: 0; width: 0; height: 0; }
+        .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #333; transition: .4s; border-radius: 24px; border: 1px solid #444;}
+        .slider:before { position: absolute; content: ""; height: 16px; width: 16px; left: 3px; bottom: 3px; background-color: white; transition: .4s; border-radius: 50%; }
+        input:checked + .slider { background-color: #25D366; border-color: #25D366; }
+        input:checked + .slider:before { transform: translateX(20px); }
+
+        .chat-back-btn { display: none; margin-right: 14px; cursor: pointer; font-size: 16px; color: #ccc; }
+        .chat-back-btn:hover { color: #25D366; }
+
+        /* --- Mobile: stack the sidebar above the content, and switch the chat view to a
+           list-then-detail pattern (contact list OR the open chat, not side by side) --- */
+        @media (max-width: 860px) {
+            nav { padding: 12px 18px; }
+            .logo { font-size: 19px; }
+            .nav-links a { margin-left: 12px; font-size: 12px; }
+
+            .container { flex-direction: column; padding: 16px; height: auto; min-height: calc(100vh - 76px); gap: 16px; }
+
+            .social-sidebar { width: 100%; }
+            .social-menu { display: flex; padding: 8px; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+            .social-menu li { margin-bottom: 0; flex-shrink: 0; }
+            .social-menu li a { padding: 10px 14px; white-space: nowrap; }
+            .social-menu li a i { margin-right: 6px; }
+
+            .social-main { min-height: 75vh; }
+
+            .chat-layout { flex-direction: column; }
+            .contact-list { width: 100%; border-right: none; }
+            .chat-window { display: none; }
+            .chat-back-btn { display: inline-block; }
+            #view-chat.chat-open .contact-list { display: none; }
+            #view-chat.chat-open .chat-window { display: flex; }
+
+            .status-container, .feed-container, .settings-container { padding: 18px; }
+            .status-card { width: 100px; height: 150px; }
+
+            .modal { width: calc(100% - 32px); max-width: 400px; padding: 22px; }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Navigation (rendered by app.js) -->
+    <div id="navbar-container"></div>
+
+    <div class="container">
+        
+        <!-- SIDEBAR -->
+        <div class="social-sidebar">
+            <h2>Hive Social</h2>
+            <ul class="social-menu">
+                <li><a href="#" id="tab-chat" class="active"><i class="fas fa-comments"></i> Direct Chats</a></li>
+                <li><a href="#" id="tab-requests"><i class="fas fa-user-clock"></i> Friend Requests <span class="unread-badge" id="requestsBadge" style="margin-left: auto;" hidden></span></a></li>
+                <li><a href="#" id="tab-private"><i class="fas fa-lock"></i> Private Updates</a></li>
+                <li><a href="#" id="tab-public"><i class="fas fa-globe"></i> Public Updates</a></li>
+                <li style="margin-top: 20px;"><a href="#" id="tab-settings"><i class="fas fa-cog"></i> Settings</a></li>
+            </ul>
+        </div>
+
+        <!-- MAIN AREA -->
+        <div class="social-main">
+            
+           <!-- VIEW 1: CHATS -->
+            <div id="view-chat" class="chat-layout">
+                
+               <!-- The Contact List (Restored & Upgraded) -->
+                <div class="contact-list">
+                    <!-- Add Contact Button -->
+                    <div style="padding: 14px; border-bottom: 1px solid rgba(255,255,255,0.06);">
+                        <button id="addContactBtn" style="width: 100%; background: linear-gradient(135deg, #2ee579, #1fae63); color: #062b16; border: none; padding: 11px; border-radius: 12px; cursor: pointer; font-weight: 700; font-size: 13px; box-shadow: 0 4px 14px rgba(37,211,102,0.25); transition: transform 0.15s;" onmouseover="this.style.transform='translateY(-1px)'" onmouseout="this.style.transform='none'">
+                            <i class="fas fa-user-plus"></i> Add New Contact
+                        </button>
+                    </div>
+
+                    <!-- Global Chat Default -->
+                    <div class="contact-item active" id="globalChatItem">
+                        <div class="contact-avatar" style="display: flex; justify-content: center; align-items: center; background: #ff416c;">
+                            <i class="fas fa-globe" style="color: white;"></i>
+                        </div>
+                        <div style="flex: 1; min-width: 0;">
+                            <div class="contact-name">Campus Global Chat</div>
+                            <div class="contact-preview" id="globalPreviewText">Everyone is here!</div>
+                        </div>
+                        <div class="unread-badge" id="globalUnreadBadge" hidden></div>
+                    </div>
+
+                    <!-- New contacts will appear below here dynamically -->
+                    <div id="myContactsBox"></div>
+                </div>
+
+                <!-- The Live Chat Window -->
+                <div class="chat-window">
+                    <div class="chat-header">
+                        <i class="fas fa-arrow-left chat-back-btn" id="chatBackBtn"></i>
+                        <div class="contact-avatar" style="width:30px; height:30px; margin-right:10px;"></div>
+                        <span id="chatHeaderText">Campus Global Chat</span>
+                    </div>
+                    <!-- Live Chat Box with ID -->
+                    <div class="chat-messages" id="chatBox">
+                        <div style="text-align: center; color: #888; font-size: 12px;">Welcome to the live chat!</div>
+                    </div>
+                    <div class="typing-indicator" id="typingIndicator"></div>
+                    <!-- Inputs with IDs -->
+                    <div class="chat-input">
+                        <input type="text" id="chatInput" placeholder="Type a message...">
+                        <button id="sendBtn"><i class="fas fa-paper-plane"></i></button>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- VIEW: FRIEND REQUESTS -->
+            <div id="view-requests" class="status-container" style="display: none;">
+                <h3 class="status-header">Friend Requests</h3>
+                <div id="requestsList"></div>
+            </div>
+
+            <!-- VIEW 2: PRIVATE UPDATES -->
+            <div id="view-private" class="status-container" style="display: none;">
+                <h3 class="status-header">Recent Updates (Contacts Only)</h3>
+                <div class="status-row" id="privateUpdatesRow">
+                    <div class="status-card add-status" id="addPrivateUpdateBtn">
+                        <i class="fas fa-plus" style="font-size: 24px; margin-bottom: 10px;"></i>
+                        <span class="status-name" style="color: #888; text-shadow: none;">Add Update</span>
+                    </div>
+                </div>
+                <p style="color: #888; font-size: 13px;">Your private updates are visible only to your contacts, and disappear after 24 hours.</p>
+            </div>
+
+            <!-- VIEW 3: PUBLIC UPDATES -->
+            <div id="view-public" class="feed-container" style="display: none;">
+                <div class="post-input-box">
+                    <textarea rows="3" id="publicPostInput" placeholder="What's happening on campus today?" maxlength="500"></textarea>
+                    <div id="publicImagePreviewWrap" class="image-preview-wrap" hidden>
+                        <img id="publicImagePreview" src="" alt="Selected image">
+                        <button type="button" class="image-preview-remove" id="publicImageRemoveBtn"><i class="fas fa-times"></i></button>
+                    </div>
+                    <div class="post-input-box-footer">
+                        <button type="button" class="attach-image-btn" id="publicAttachImageBtn" title="Attach an image"><i class="fas fa-image"></i></button>
+                        <input type="file" id="publicImageInput" accept="image/*" hidden>
+                        <button class="post-submit-btn" id="publicPostBtn">Post Update</button>
+                    </div>
+                </div>
+
+                <div id="publicPostsList"></div>
+            </div>
+
+            <!-- VIEW 4: SETTINGS -->
+            <div id="view-settings" class="settings-container" style="display: none;">
+                <h3 class="settings-header">Social Settings</h3>
+                
+                <!-- Privacy Settings -->
+                <div class="settings-card">
+                    <h4><i class="fas fa-shield-alt" style="color: #25D366;"></i> Privacy</h4>
+                    <div class="setting-row">
+                        <span>Read Receipts (Show blue ticks)</span>
+                        <label class="switch"><input type="checkbox" id="readReceiptsToggle" checked><span class="slider"></span></label>
+                    </div>
+                    <div class="setting-row">
+                        <span>Who can see my Private Updates</span>
+                        <select class="setting-select">
+                            <option>My Contacts</option>
+                            <option>Specific Contacts...</option>
+                            <option>Nobody</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Chat Preferences -->
+                <div class="settings-card">
+                    <h4><i class="fas fa-comment-dots" style="color: #25D366;"></i> Chat Preferences</h4>
+                    <div class="setting-row">
+                        <span>Enter key sends message</span>
+                        <label class="switch"><input type="checkbox"><span class="slider"></span></label>
+                    </div>
+                    <div class="setting-row">
+                        <span>Auto-download images on Wi-Fi</span>
+                        <label class="switch"><input type="checkbox" checked><span class="slider"></span></label>
+                    </div>
+                </div>
+
+                <!-- Data & Storage -->
+                <div class="settings-card">
+                    <h4><i class="fas fa-database" style="color: #25D366;"></i> Data & History</h4>
+                    <div class="setting-row">
+                        <span>Clear all direct chat history</span>
+                        <button class="setting-btn-danger">Clear Chats</button>
+                    </div>
+                </div>
+
+            </div>
+
+        </div>
+    </div>
+
+    <!-- Add Contact Modal -->
+    <div class="modal-overlay" id="addContactModal">
+        <div class="modal">
+            <i class="fas fa-times close-btn" id="closeAddContactModal"></i>
+            <h2><i class="fas fa-user-plus" style="color: #25D366;"></i> Add a Contact</h2>
+            <input type="text" class="search-input" id="contactSearchInput" placeholder="Search by username..." autocomplete="off">
+            <div class="search-results" id="contactSearchResults">
+                <div class="search-hint">Start typing a name to search</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- New Private Update Modal -->
+    <div class="modal-overlay" id="addUpdateModal">
+        <div class="modal">
+            <i class="fas fa-times close-btn" id="closeAddUpdateModal"></i>
+            <h2><i class="fas fa-bolt" style="color: #25D366;"></i> New Private Update</h2>
+            <textarea class="search-input" id="privateUpdateInput" rows="4" maxlength="200" placeholder="Share something with your contacts... (visible for 24 hours)" style="resize: none;"></textarea>
+            <div id="privateImagePreviewWrap" class="image-preview-wrap" hidden>
+                <img id="privateImagePreview" src="" alt="Selected image">
+                <button type="button" class="image-preview-remove" id="privateImageRemoveBtn"><i class="fas fa-times"></i></button>
+            </div>
+            <div style="display: flex; gap: 10px; align-items: center;">
+                <button type="button" class="attach-image-btn" id="privateAttachImageBtn" title="Attach an image"><i class="fas fa-image"></i></button>
+                <input type="file" id="privateImageInput" accept="image/*" hidden>
+                <button class="modal-btn" id="postPrivateUpdateBtn" style="flex: 1; background: linear-gradient(135deg, #2ee579, #1fae63); color: #062b16; border: none; padding: 12px; border-radius: 10px; font-weight: 700; cursor: pointer;">Post Update</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Private Update Viewer Modal -->
+    <div class="modal-overlay" id="viewUpdateModal">
+        <div class="modal" style="text-align: center;">
+            <i class="fas fa-times close-btn" id="closeViewUpdateModal"></i>
+            <div id="viewUpdateAuthor" style="font-weight: bold; color: #25D366; margin-bottom: 15px;"></div>
+            <img id="viewUpdateImage" src="" alt="" hidden style="max-width: 100%; border-radius: 12px; margin-bottom: 15px;">
+            <div id="viewUpdateText" style="font-size: 17px; line-height: 1.6; white-space: pre-wrap;"></div>
+            <div id="viewUpdateTime" style="color: #888; font-size: 12px; margin-top: 20px;"></div>
+        </div>
+    </div>
+
+    <!-- Image Lightbox (public post images) -->
+    <div class="modal-overlay" id="imageLightbox">
+        <div style="position: relative; max-width: 90vw; max-height: 90vh;">
+            <i class="fas fa-times close-btn" id="closeImageLightbox" style="top: -34px; right: 0; color: #fff;"></i>
+            <img id="imageLightboxImg" src="" alt="" style="max-width: 90vw; max-height: 85vh; border-radius: 10px; display: block;">
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+    <script>
+        // Tab Switching Logic updated to include Settings
+        const tabs = {
+            'tab-chat': 'view-chat',
+            'tab-requests': 'view-requests',
+            'tab-private': 'view-private',
+            'tab-public': 'view-public',
+            'tab-settings': 'view-settings'
+        };
+
+        function switchTab(activeTabId) {
+            Object.keys(tabs).forEach(tabId => {
+                document.getElementById(tabId).classList.remove('active');
+                document.getElementById(tabs[tabId]).style.display = 'none';
+            });
+            
+            document.getElementById(activeTabId).classList.add('active');
+            
+            // Chat needs 'flex' to keep the layout from breaking, the rest use 'block'
+            document.getElementById(tabs[activeTabId]).style.display = (activeTabId === 'tab-chat') ? 'flex' : 'block';
+        }
+
+        document.getElementById('tab-chat').addEventListener('click', (e) => { e.preventDefault(); switchTab('tab-chat'); });
+        document.getElementById('tab-requests').addEventListener('click', (e) => { e.preventDefault(); switchTab('tab-requests'); });
+        document.getElementById('tab-private').addEventListener('click', (e) => { e.preventDefault(); switchTab('tab-private'); });
+        document.getElementById('tab-public').addEventListener('click', (e) => { e.preventDefault(); switchTab('tab-public'); });
+        document.getElementById('tab-settings').addEventListener('click', (e) => { e.preventDefault(); switchTab('tab-settings'); });
+    </script>
+    <script>
+        // Pull the user's name/email so we know who is sending each message. requireAuth()
+        // redirects signed-out visitors to login_page.htm; the rest of this file already
+        // guards every use of userData with `if (userData)`, so it's safe even in the brief
+        // window before that redirect takes effect.
+        const userData = requireAuth();
+        const myName = userData ? userData.name : "Anonymous Student";
+
+        const chatBox = document.getElementById('chatBox');
+        const chatInput = document.getElementById('chatInput');
+        const sendBtn = document.getElementById('sendBtn');
+        const chatHeaderText = document.getElementById('chatHeaderText');
+        const globalChatItem = document.getElementById('globalChatItem');
+        const typingIndicatorEl = document.getElementById('typingIndicator');
+        const myContactsBox = document.getElementById('myContactsBox');
+
+        function escapeHtml(str) {
+            const div = document.createElement('div');
+            div.textContent = str == null ? '' : String(str);
+            return div.innerHTML;
+        }
+
+        // Deterministic per-person color, used for both avatar initials and text-status card backgrounds
+        const AVATAR_COLORS = ['#ff416c', '#25D366', '#00c3ff', '#ffb300', '#8e44ad', '#e67e22'];
+        function colorForEmail(email) {
+            let hash = 0;
+            const key = email || '';
+            for (let i = 0; i < key.length; i++) hash = key.charCodeAt(i) + ((hash << 5) - hash);
+            return AVATAR_COLORS[Math.abs(hash) % AVATAR_COLORS.length];
+        }
+
+        // Renders a colored initials avatar in place of an empty gray circle
+        function avatarHtml(name, email, sizeStyle) {
+            const source = (name || email || '?').trim();
+            const initials = source.split(/\s+/).map(w => w[0]).slice(0, 2).join('').toUpperCase() || '?';
+            const color = colorForEmail(email || name || '');
+            return `<div class="contact-avatar" style="background: linear-gradient(145deg, ${color}, #16161a);${sizeStyle || ''}">${escapeHtml(initials)}</div>`;
+        }
+
+        // ============ Reusable row/card builders ============
+        // Small, self-contained "component" functions: each one builds and returns a single
+        // DOM element from data, with no side effects beyond wiring its own click handler(s).
+        // The caller decides where to mount it (append, insert at a position, etc.) and owns
+        // any live-data subscription that needs a reference back into the element - that part
+        // stays with the caller since it's specific to *why* that row is on screen, not what
+        // the row looks like.
+
+        function createContactRow(contact, isActive, onClick) {
+            const item = document.createElement('div');
+            item.className = 'contact-item' + (isActive ? ' active' : '');
+            item.innerHTML = `
+                ${avatarHtml(contact.friend_name, contact.friend_email)}
+                <div style="flex: 1; min-width: 0;">
+                    <div class="contact-name">${escapeHtml(contact.friend_name)}</div>
+                    <div class="contact-preview" data-preview>Say hi!</div>
+                </div>
+                <div class="unread-badge" data-badge hidden></div>
+            `;
+            item.addEventListener('click', onClick);
+            return item;
+        }
+
+        function createSearchResultRow(friend, onClick) {
+            const row = document.createElement('div');
+            row.className = 'search-result-item';
+            row.innerHTML = `
+                ${avatarHtml(friend.name, friend.email)}
+                <div>
+                    <div class="contact-name">${escapeHtml(friend.name || friend.username)}</div>
+                    <div class="contact-preview">@${escapeHtml(friend.username || '')}</div>
+                </div>
+            `;
+            row.addEventListener('click', onClick);
+            return row;
+        }
+
+        function createRequestRow(req, onAccept, onDecline) {
+            const row = document.createElement('div');
+            row.className = 'request-item';
+            row.innerHTML = `
+                ${avatarHtml(req.from_name, req.from_email)}
+                <div style="flex: 1; min-width: 0;">
+                    <div class="contact-name">${escapeHtml(req.from_name || req.from_email)}</div>
+                    <div class="contact-preview">wants to add you as a contact</div>
+                </div>
+                <button class="request-btn request-accept-btn" title="Accept"><i class="fas fa-check"></i></button>
+                <button class="request-btn request-decline-btn" title="Decline"><i class="fas fa-times"></i></button>
+            `;
+            row.querySelector('.request-accept-btn').addEventListener('click', onAccept);
+            row.querySelector('.request-decline-btn').addEventListener('click', onDecline);
+            return row;
+        }
+
+        function createCommentRow(commentData) {
+            const row = document.createElement('div');
+            row.className = 'comment-item';
+            row.innerHTML = `<strong>${escapeHtml(commentData.authorName)}:</strong> ${escapeHtml(commentData.text)}`;
+            return row;
+        }
+
+        function createStatusCard(update, onClick) {
+            const card = document.createElement('div');
+            card.className = 'status-card status-card-text';
+
+            if (update.imageUrl) {
+                card.style.backgroundImage = `url('${update.imageUrl}')`;
+                card.innerHTML = `
+                    <div class="status-card-image-overlay"></div>
+                    <span class="status-name" style="position: relative; z-index: 2;">${escapeHtml(update.authorName)}</span>
+                `;
+            } else {
+                card.style.background = `linear-gradient(145deg, ${colorForEmail(update.authorEmail)}, #1a1a1a)`;
+                card.innerHTML = `
+                    <div class="status-body">${escapeHtml(update.text)}</div>
+                    <span class="status-name">${escapeHtml(update.authorName)}</span>
+                `;
+            }
+            card.addEventListener('click', onClick);
+            return card;
+        }
+
+        // --- Image attach/upload/lightbox helpers (shared by public posts and private updates) ---
+        function wireImagePicker({ attachBtn, fileInput, previewWrap, previewImg, removeBtn }) {
+            let selectedFile = null;
+
+            attachBtn.addEventListener('click', () => fileInput.click());
+            fileInput.addEventListener('change', () => {
+                const file = fileInput.files[0];
+                if (!file) return;
+                if (file.size > 8 * 1024 * 1024) {
+                    alert('Please choose an image under 8MB.');
+                    fileInput.value = '';
+                    return;
+                }
+                selectedFile = file;
+                previewImg.src = URL.createObjectURL(file);
+                previewWrap.hidden = false;
+            });
+            removeBtn.addEventListener('click', () => {
+                selectedFile = null;
+                fileInput.value = '';
+                previewWrap.hidden = true;
+            });
+
+            return {
+                getFile: () => selectedFile,
+                reset: () => {
+                    selectedFile = null;
+                    fileInput.value = '';
+                    previewWrap.hidden = true;
+                }
+            };
+        }
+
+        // Downscales+re-encodes a picked image on the client before it ever reaches the network -
+        // phone camera photos routinely come in at 3000px+ and several MB, which is what was making
+        // posting an update feel like it hangs. GIFs are left untouched since canvas re-encoding would
+        // flatten them to a single frame and kill the animation.
+        function compressImage(file, maxDimension = 1600, quality = 0.82) {
+            if (file.type === 'image/gif') return Promise.resolve(file);
+            return new Promise((resolve, reject) => {
+                const img = new Image();
+                const objectUrl = URL.createObjectURL(file);
+                img.onload = () => {
+                    URL.revokeObjectURL(objectUrl);
+                    let { width, height } = img;
+                    if (width > maxDimension || height > maxDimension) {
+                        if (width > height) {
+                            height = Math.round(height * (maxDimension / width));
+                            width = maxDimension;
+                        } else {
+                            width = Math.round(width * (maxDimension / height));
+                            height = maxDimension;
+                        }
+                    }
+                    const canvas = document.createElement('canvas');
+                    canvas.width = width;
+                    canvas.height = height;
+                    canvas.getContext('2d').drawImage(img, 0, 0, width, height);
+                    canvas.toBlob((blob) => blob ? resolve(blob) : resolve(file), 'image/jpeg', quality);
+                };
+                img.onerror = () => { URL.revokeObjectURL(objectUrl); resolve(file); };
+                img.src = objectUrl;
+            });
+        }
+
+        async function uploadImage(file, path) {
+            if (!storage) throw new Error('Image storage is not set up for this project yet.');
+            const uploadable = await compressImage(file);
+            const fileRef = storage.ref(path);
+            await fileRef.put(uploadable);
+            return fileRef.getDownloadURL();
+        }
+
+        const imageLightbox = document.getElementById('imageLightbox');
+        const imageLightboxImg = document.getElementById('imageLightboxImg');
+        function openImageLightbox(url) {
+            imageLightboxImg.src = url;
+            imageLightbox.style.display = 'flex';
+        }
+        document.getElementById('closeImageLightbox').addEventListener('click', () => { imageLightbox.style.display = 'none'; });
+        imageLightbox.addEventListener('click', (e) => { if (e.target === imageLightbox) imageLightbox.style.display = 'none'; });
+
+        // A deterministic, order-independent id for a 1:1 conversation between two emails
+        function getConversationId(emailA, emailB) {
+            return [emailA, emailB].sort().join('|');
+        }
+
+        // --- Read Receipts setting (synced to Firestore so the OTHER participant can respect it) ---
+        let readReceiptsEnabled = localStorage.getItem('studyHiveReadReceipts') !== 'false';
+        const readReceiptsToggle = document.getElementById('readReceiptsToggle');
+        readReceiptsToggle.checked = readReceiptsEnabled;
+        if (userData) {
+            db.collection('users').doc(userData.id).set({ readReceiptsEnabled }, { merge: true });
+        }
+        readReceiptsToggle.addEventListener('change', () => {
+            readReceiptsEnabled = readReceiptsToggle.checked;
+            localStorage.setItem('studyHiveReadReceipts', readReceiptsEnabled);
+            if (userData) {
+                db.collection('users').doc(userData.id).set({ readReceiptsEnabled }, { merge: true });
+            }
+        });
+
+        // --- Chat state ---
+        let currentMessagesRef = null;
+        let currentDm = null; // { conversationId, mySlot, otherSlot, friendEmail, friendName } or null when on global chat
+        let otherReadReceiptsEnabled = true; // whether the DM partner allows their read status to be seen
+        let unsubscribeMessages = null;
+        let unsubscribeConversationDoc = null;
+        let unsubscribeTyping = null;
+
+        function setActiveContactItem(el) {
+            document.querySelectorAll('.contact-item').forEach(item => item.classList.remove('active'));
+            el.classList.add('active');
+        }
+
+        document.getElementById('chatBackBtn').addEventListener('click', () => {
+            document.getElementById('view-chat').classList.remove('chat-open');
+        });
+
+        function detachCurrentChat() {
+            [unsubscribeMessages, unsubscribeConversationDoc, unsubscribeTyping].forEach(fn => fn && fn());
+            unsubscribeMessages = unsubscribeConversationDoc = unsubscribeTyping = null;
+            stopTyping();
+        }
+
+        function createChatBubble(msgData) {
+            const isMe = userData && msgData.senderEmail === userData.email;
+            const tsMillis = msgData.timestamp ? msgData.timestamp.toMillis() : Date.now();
+
+            const bubble = document.createElement('div');
+            bubble.classList.add('message', isMe ? 'sent' : 'received');
+            bubble.dataset.ts = tsMillis;
+            bubble.innerHTML = `<strong>${escapeHtml(msgData.senderName)}</strong><br>${escapeHtml(msgData.text)}` +
+                (isMe ? ' <span class="msg-tick"><i class="fas fa-check"></i></span>' : '');
+            return bubble;
+        }
+
+        function appendChatBubble(msgData) {
+            chatBox.appendChild(createChatBubble(msgData));
+            chatBox.scrollTop = chatBox.scrollHeight;
+        }
+
+        function updateReadTicks(conversationData) {
+            if (!currentDm) return;
+            const otherLastRead = conversationData['lastRead' + currentDm.otherSlot];
+            const otherLastReadMillis = otherLastRead ? otherLastRead.toMillis() : 0;
+
+            chatBox.querySelectorAll('.message.sent[data-ts]').forEach((el) => {
+                const tickEl = el.querySelector('.msg-tick i');
+                if (!tickEl) return;
+                // Mutual toggle, like WhatsApp: you only see their read status if you both allow it
+                const isRead = readReceiptsEnabled && otherReadReceiptsEnabled && Number(el.dataset.ts) <= otherLastReadMillis;
+                tickEl.className = isRead ? 'fas fa-check-double' : 'fas fa-check';
+                tickEl.style.color = isRead ? '#4fc3f7' : '';
+            });
+        }
+
+        function markDmRead(dm) {
+            if (!dm) return;
+            // Always record when I actually read this - my own unread badge depends on it regardless of
+            // my read-receipts setting. Whether the OTHER person can see this as a blue tick is a separate,
+            // render-side check (updateReadTicks gates on THEIR own readReceiptsEnabled, not mine).
+            db.collection('dms').doc(dm.conversationId).set({
+                ['lastRead' + dm.mySlot]: firebase.firestore.FieldValue.serverTimestamp()
+            }, { merge: true });
+        }
+
+        function markGlobalRead() {
+            if (!userData) return;
+            db.collection('readStates').doc(userData.email).set({
+                globalChatLastRead: firebase.firestore.FieldValue.serverTimestamp()
+            }, { merge: true });
+        }
+
+        // --- Typing indicator ---
+        function getTypingCollectionRef() {
+            return currentDm
+                ? db.collection('dms').doc(currentDm.conversationId).collection('typing')
+                : db.collection('typingGlobal');
+        }
+
+        let typingDocRef = null;
+        let isTypingFlag = false;
+        let typingTimeout = null;
+
+        function startTyping() {
+            if (!userData) return;
+            if (!isTypingFlag) {
+                isTypingFlag = true;
+                typingDocRef = getTypingCollectionRef().doc(userData.email);
+                typingDocRef.set({ name: myName, updatedAt: firebase.firestore.FieldValue.serverTimestamp() });
+            }
+            clearTimeout(typingTimeout);
+            typingTimeout = setTimeout(stopTyping, 3000);
+        }
+
+        function stopTyping() {
+            clearTimeout(typingTimeout);
+            if (isTypingFlag && typingDocRef) typingDocRef.delete().catch(() => {});
+            isTypingFlag = false;
+            typingDocRef = null;
+        }
+
+        function renderTypingSnapshot(snapshot) {
+            const now = Date.now();
+            const names = [];
+            snapshot.forEach((doc) => {
+                if (userData && doc.id === userData.email) return; // ignore my own typing status
+                const data = doc.data();
+                const updatedAtMillis = data.updatedAt ? data.updatedAt.toMillis() : 0;
+                if (now - updatedAtMillis < 5000) names.push(data.name);
+            });
+            typingIndicatorEl.textContent = names.length
+                ? `${names.join(', ')} ${names.length === 1 ? 'is' : 'are'} typing...`
+                : '';
+        }
+
+        chatInput.addEventListener('input', startTyping);
+
+        // --- Opening chats ---
+        function openGlobalChat() {
+            detachCurrentChat();
+            currentDm = null;
+            currentMessagesRef = db.collection('messages');
+            chatHeaderText.textContent = 'Campus Global Chat';
+            chatBox.innerHTML = '';
+            setActiveContactItem(globalChatItem);
+
+            unsubscribeMessages = currentMessagesRef.orderBy('timestamp', 'asc').limitToLast(50)
+                .onSnapshot((snapshot) => {
+                    snapshot.docChanges().forEach((change) => {
+                        if (change.type === 'added') appendChatBubble(change.doc.data());
+                    });
+                    markGlobalRead();
+                });
+
+            unsubscribeTyping = getTypingCollectionRef().onSnapshot(renderTypingSnapshot);
+        }
+
+        function openDirectMessage(friendEmail, friendName, activeEl) {
+            document.getElementById('view-chat').classList.add('chat-open'); // switch to detail view on mobile
+            detachCurrentChat();
+
+            const conversationId = getConversationId(userData.email, friendEmail);
+            const sorted = conversationId.split('|');
+            const mySlot = sorted[0] === userData.email ? 'A' : 'B';
+            const otherSlot = mySlot === 'A' ? 'B' : 'A';
+            currentDm = { conversationId, mySlot, otherSlot, friendEmail, friendName };
+
+            otherReadReceiptsEnabled = true; // optimistic default until the lookup below resolves
+            db.collection('users').where('email', '==', friendEmail).limit(1).get().then((snap) => {
+                if (!snap.empty) otherReadReceiptsEnabled = snap.docs[0].data().readReceiptsEnabled !== false;
+            });
+
+            currentMessagesRef = db.collection('dms').doc(conversationId).collection('messages');
+            chatHeaderText.textContent = friendName;
+            chatBox.innerHTML = '';
+            setActiveContactItem(activeEl);
+
+            unsubscribeMessages = currentMessagesRef.orderBy('timestamp', 'asc').limitToLast(50)
+                .onSnapshot((snapshot) => {
+                    snapshot.docChanges().forEach((change) => {
+                        if (change.type === 'added') appendChatBubble(change.doc.data());
+                    });
+                    markDmRead(currentDm);
+                });
+
+            unsubscribeConversationDoc = db.collection('dms').doc(conversationId).onSnapshot((doc) => {
+                if (doc.exists) updateReadTicks(doc.data());
+            });
+
+            unsubscribeTyping = getTypingCollectionRef().onSnapshot(renderTypingSnapshot);
+        }
+
+        globalChatItem.addEventListener('click', () => {
+            document.getElementById('view-chat').classList.add('chat-open'); // switch to detail view on mobile
+            openGlobalChat();
+        });
+
+        // --- Sending a Message (writes to whichever chat is currently open) ---
+        async function sendMessage() {
+            const text = chatInput.value.trim();
+            if (text === "" || !currentMessagesRef) return;
+
+            await currentMessagesRef.add({
+                senderName: myName,
+                senderEmail: userData ? userData.email : null,
+                text: text,
+                timestamp: firebase.firestore.FieldValue.serverTimestamp()
+            });
+
+            stopTyping();
+
+            if (currentDm) {
+                const sortedEmails = currentDm.conversationId.split('|');
+                const sortedNames = sortedEmails.map(e => e === userData.email ? myName : currentDm.friendName);
+                db.collection('dms').doc(currentDm.conversationId).set({
+                    participants: sortedEmails,
+                    participantNames: sortedNames,
+                    lastMessage: text,
+                    lastMessageAt: firebase.firestore.FieldValue.serverTimestamp(),
+                    lastSenderEmail: userData.email
+                }, { merge: true });
+            } else if (userData) {
+                db.collection('chatMeta').doc('global').set({
+                    lastMessage: text,
+                    lastMessageAt: firebase.firestore.FieldValue.serverTimestamp(),
+                    lastSenderEmail: userData.email
+                }, { merge: true });
+            }
+
+            chatInput.value = "";
+        }
+
+        // Send when clicking the button or pressing Enter
+        sendBtn.addEventListener('click', sendMessage);
+        chatInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') sendMessage();
+        });
+
+        // Start on the global chat by default
+        openGlobalChat();
+
+        // --- Global chat sidebar preview + unread badge ---
+        const globalPreviewText = document.getElementById('globalPreviewText');
+        const globalUnreadBadge = document.getElementById('globalUnreadBadge');
+        let latestGlobalMeta = null;
+        let myGlobalLastRead = 0;
+
+        function refreshGlobalBadge() {
+            if (!latestGlobalMeta || !latestGlobalMeta.lastMessageAt) return;
+            const isMine = userData && latestGlobalMeta.lastSenderEmail === userData.email;
+            const isOpenNow = !currentDm;
+            const hasUnread = !isMine && !isOpenNow && latestGlobalMeta.lastMessageAt.toMillis() > myGlobalLastRead;
+            globalUnreadBadge.hidden = !hasUnread;
+            globalUnreadBadge.textContent = '';
+        }
+
+        if (userData) {
+            db.collection('chatMeta').doc('global').onSnapshot((doc) => {
+                if (!doc.exists) return;
+                latestGlobalMeta = doc.data();
+                const prefix = latestGlobalMeta.lastSenderEmail === userData.email ? 'You: ' : '';
+                globalPreviewText.textContent = prefix + latestGlobalMeta.lastMessage;
+                refreshGlobalBadge();
+            });
+
+            db.collection('readStates').doc(userData.email).onSnapshot((doc) => {
+                myGlobalLastRead = (doc.exists && doc.data().globalChatLastRead) ? doc.data().globalChatLastRead.toMillis() : 0;
+                refreshGlobalBadge();
+            });
+        }
+
+        // --- Load & Live-Update the Contact Sidebar (with per-contact preview + unread badge) ---
+        const dmMetaUnsubscribers = new Map();
+
+        if (userData) {
+            db.collection('contacts').where('user_email', '==', userData.email)
+                .onSnapshot((snapshot) => {
+                    dmMetaUnsubscribers.forEach(unsub => unsub());
+                    dmMetaUnsubscribers.clear();
+                    myContactsBox.innerHTML = '';
+
+                    // Also keep the contact-email set used to filter Private Updates in sync
+                    myContactEmailsForUpdates = new Set(snapshot.docs.map(d => d.data().friend_email));
+                    renderPrivateUpdates();
+
+                    snapshot.forEach((doc) => {
+                        const contact = doc.data();
+                        const isActive = currentDm && currentDm.friendEmail === contact.friend_email;
+
+                        const item = createContactRow(contact, isActive, (e) =>
+                            openDirectMessage(contact.friend_email, contact.friend_name, e.currentTarget)
+                        );
+                        myContactsBox.appendChild(item);
+
+                        const conversationId = getConversationId(userData.email, contact.friend_email);
+                        const mySlot = conversationId.split('|')[0] === userData.email ? 'A' : 'B';
+                        const previewEl = item.querySelector('[data-preview]');
+                        const badgeEl = item.querySelector('[data-badge]');
+
+                        const unsub = db.collection('dms').doc(conversationId).onSnapshot((convDoc) => {
+                            if (!convDoc.exists) return;
+                            const data = convDoc.data();
+
+                            if (data.lastMessage) {
+                                const prefix = data.lastSenderEmail === userData.email ? 'You: ' : '';
+                                previewEl.textContent = prefix + data.lastMessage;
+                            }
+
+                            // Derived from timestamps rather than a shared counter, so there's no write-write
+                            // race between the sender's "new message" write and my own "I read it" write.
+                            const isMine = data.lastSenderEmail === userData.email;
+                            const isOpenNow = currentDm && currentDm.friendEmail === contact.friend_email;
+                            const lastRead = data['lastRead' + mySlot];
+                            const lastReadMillis = lastRead ? lastRead.toMillis() : 0;
+                            const hasUnread = !isMine && !isOpenNow && data.lastMessageAt && data.lastMessageAt.toMillis() > lastReadMillis;
+
+                            badgeEl.hidden = !hasUnread;
+                            badgeEl.textContent = '';
+                        });
+                        dmMetaUnsubscribers.set(contact.friend_email, unsub);
+                    });
+                });
+        }
+
+        // --- Add a Contact: search-by-name modal ---
+        const addContactModal = document.getElementById('addContactModal');
+        const contactSearchInput = document.getElementById('contactSearchInput');
+        const contactSearchResults = document.getElementById('contactSearchResults');
+        let searchDebounce = null;
+
+        function closeAddContactModal() {
+            addContactModal.style.display = 'none';
+        }
+
+        document.getElementById('addContactBtn').addEventListener('click', () => {
+            contactSearchInput.value = '';
+            contactSearchResults.innerHTML = '<div class="search-hint">Start typing a name to search</div>';
+            addContactModal.style.display = 'flex';
+            contactSearchInput.focus();
+        });
+        document.getElementById('closeAddContactModal').addEventListener('click', closeAddContactModal);
+        addContactModal.addEventListener('click', (e) => {
+            if (e.target === addContactModal) closeAddContactModal();
+        });
+
+        contactSearchInput.addEventListener('input', () => {
+            clearTimeout(searchDebounce);
+            const q = contactSearchInput.value.trim().toLowerCase();
+
+            if (q.length < 2) {
+                contactSearchResults.innerHTML = '<div class="search-hint">Keep typing (at least 2 characters)</div>';
+                return;
+            }
+
+            searchDebounce = setTimeout(() => runContactSearch(q), 300);
+        });
+
+        // Prefix search on username_lower - Firestore has no case-insensitive/substring search,
+        // so profiles keep a lowercased copy of their unique username for this exact purpose.
+        async function runContactSearch(q) {
+            contactSearchResults.innerHTML = '<div class="search-hint">Searching...</div>';
+            try {
+                const snap = await db.collection('users')
+                    .where('username_lower', '>=', q)
+                    .where('username_lower', '<=', q + '')
+                    .limit(10)
+                    .get();
+
+                const results = snap.docs
+                    .map(d => d.data())
+                    .filter(u => u.email && u.email !== userData.email);
+
+                if (results.length === 0) {
+                    contactSearchResults.innerHTML = '<div class="search-hint">No students found with that username</div>';
+                    return;
+                }
+
+                contactSearchResults.innerHTML = '';
+                results.forEach((friend) => {
+                    contactSearchResults.appendChild(createSearchResultRow(friend, () => addContact(friend)));
+                });
+            } catch (error) {
+                contactSearchResults.innerHTML = `<div class="search-hint">Search failed: ${escapeHtml(error.message)}</div>`;
+            }
+        }
+
+        // Sends a friend request instead of adding directly - the other person has to accept it
+        // (see the Friend Requests tab / respondToRequest below) before a contacts entry is created.
+        async function addContact(friend) {
+            try {
+                const existingContact = await db.collection('contacts')
+                    .where('user_email', '==', userData.email)
+                    .where('friend_email', '==', friend.email)
+                    .limit(1).get();
+
+                if (!existingContact.empty) {
+                    alert(`${friend.name || friend.email} is already in your contacts!`);
+                    closeAddContactModal();
+                    return;
+                }
+
+                const sentByMe = await db.collection('friendRequests')
+                    .where('from_email', '==', userData.email)
+                    .where('to_email', '==', friend.email)
+                    .where('status', '==', 'pending')
+                    .limit(1).get();
+
+                if (!sentByMe.empty) {
+                    alert(`You already sent ${friend.name || friend.email} a friend request.`);
+                    closeAddContactModal();
+                    return;
+                }
+
+                const sentByThem = await db.collection('friendRequests')
+                    .where('from_email', '==', friend.email)
+                    .where('to_email', '==', userData.email)
+                    .where('status', '==', 'pending')
+                    .limit(1).get();
+
+                if (!sentByThem.empty) {
+                    alert(`${friend.name || friend.email} already sent you a friend request - check your Friend Requests tab!`);
+                    closeAddContactModal();
+                    return;
+                }
+
+                await db.collection('friendRequests').add({
+                    from_email: userData.email,
+                    from_name: userData.name || userData.email,
+                    to_email: friend.email,
+                    status: 'pending',
+                    createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                });
+
+                alert(`Friend request sent to ${friend.name || friend.email}!`);
+                closeAddContactModal();
+            } catch (error) {
+                alert('Could not reach Firestore. ' + error.message);
+            }
+        }
+
+        // --- Incoming Friend Requests ---
+        const requestsBadge = document.getElementById('requestsBadge');
+        const requestsList = document.getElementById('requestsList');
+
+        if (userData) {
+            db.collection('friendRequests')
+                .where('to_email', '==', userData.email)
+                .where('status', '==', 'pending')
+                .onSnapshot((snapshot) => {
+                    requestsBadge.hidden = snapshot.empty;
+                    requestsBadge.textContent = '';
+
+                    if (snapshot.empty) {
+                        requestsList.innerHTML = '<p style="color: #888; font-size: 13px;">No pending friend requests.</p>';
+                        return;
+                    }
+
+                    requestsList.innerHTML = '';
+                    snapshot.forEach((doc) => {
+                        const req = doc.data();
+                        const row = createRequestRow(
+                            req,
+                            () => respondToRequest(doc.id, req, true),
+                            () => respondToRequest(doc.id, req, false)
+                        );
+                        requestsList.appendChild(row);
+                    });
+                });
+        }
+
+        async function respondToRequest(requestId, req, accept) {
+            try {
+                if (accept) {
+                    const batch = db.batch();
+                    batch.update(db.collection('friendRequests').doc(requestId), { status: 'accepted' });
+                    batch.set(db.collection('contacts').doc(), {
+                        user_email: userData.email,
+                        friend_email: req.from_email,
+                        friend_name: req.from_name || req.from_email
+                    });
+                    batch.set(db.collection('contacts').doc(), {
+                        user_email: req.from_email,
+                        friend_email: userData.email,
+                        friend_name: userData.name || userData.email
+                    });
+                    await batch.commit();
+                } else {
+                    await db.collection('friendRequests').doc(requestId).update({ status: 'declined' });
+                }
+            } catch (error) {
+                alert('Could not respond to request. ' + error.message);
+            }
+        }
+
+        // --- Shared helper: relative time ---
+        function timeAgo(date) {
+            const seconds = Math.floor((Date.now() - date.getTime()) / 1000);
+            if (seconds < 60) return 'just now';
+            const minutes = Math.floor(seconds / 60);
+            if (minutes < 60) return `${minutes}m ago`;
+            const hours = Math.floor(minutes / 60);
+            if (hours < 24) return `${hours}h ago`;
+            const days = Math.floor(hours / 24);
+            return `${days}d ago`;
+        }
+
+        // ============ PUBLIC UPDATES (campus-wide feed) ============
+        const publicPostInput = document.getElementById('publicPostInput');
+        const publicPostBtn = document.getElementById('publicPostBtn');
+        const publicPostsList = document.getElementById('publicPostsList');
+
+        const publicImagePicker = wireImagePicker({
+            attachBtn: document.getElementById('publicAttachImageBtn'),
+            fileInput: document.getElementById('publicImageInput'),
+            previewWrap: document.getElementById('publicImagePreviewWrap'),
+            previewImg: document.getElementById('publicImagePreview'),
+            removeBtn: document.getElementById('publicImageRemoveBtn')
+        });
+
+        publicPostBtn.addEventListener('click', async () => {
+            const text = publicPostInput.value.trim();
+            const imageFile = publicImagePicker.getFile();
+            if ((!text && !imageFile) || !userData) return;
+
+            publicPostBtn.disabled = true;
+            publicPostBtn.textContent = imageFile ? 'Uploading image...' : 'Posting...';
+            try {
+                const postRef = db.collection('publicPosts').doc();
+                let imageUrl = null;
+                if (imageFile) {
+                    imageUrl = await uploadImage(imageFile, `publicPosts/${postRef.id}/${Date.now()}_${imageFile.name}`);
+                }
+
+                await postRef.set({
+                    authorEmail: userData.email,
+                    authorName: userData.name || userData.email,
+                    text: text,
+                    imageUrl: imageUrl,
+                    createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+                    likedBy: [],
+                    commentCount: 0
+                });
+                publicPostInput.value = '';
+                publicImagePicker.reset();
+            } catch (error) {
+                alert('Could not post update. ' + error.message);
+            } finally {
+                publicPostBtn.disabled = false;
+                publicPostBtn.textContent = 'Post Update';
+            }
+        });
+
+        function createPublicPostCard(postId, post) {
+            const el = document.createElement('div');
+            el.className = 'public-post';
+            el.dataset.postId = postId;
+            el.innerHTML = `
+                <div class="post-header">
+                    ${avatarHtml(post.authorName, post.authorEmail)}
+                    <div><div class="contact-name" data-author></div></div>
+                    <div class="post-time" data-time></div>
+                </div>
+                <div class="post-content" data-content></div>
+                <div class="post-image-wrap" data-image-wrap hidden><img class="post-image" data-image alt="Post image"></div>
+                <div class="post-actions">
+                    <span class="post-like-btn"><i class="far fa-heart"></i> <span data-like-count>0</span></span>
+                    <span class="post-comment-toggle"><i class="far fa-comment"></i> <span data-comment-count>0</span></span>
+                </div>
+                <div class="post-comments" hidden>
+                    <div class="comments-list" data-comments-list></div>
+                    <div class="comment-input-row">
+                        <input type="text" class="comment-input" placeholder="Write a comment..." maxlength="200">
+                        <button class="comment-send-btn">Send</button>
+                    </div>
+                </div>
+            `;
+
+            el.querySelector('.post-like-btn').addEventListener('click', () => {
+                toggleLike(postId, el.classList.contains('i-liked'));
+            });
+
+            const commentsSection = el.querySelector('.post-comments');
+            const commentsList = el.querySelector('[data-comments-list]');
+            let commentsUnsub = null;
+
+            el.querySelector('.post-comment-toggle').addEventListener('click', () => {
+                commentsSection.hidden = !commentsSection.hidden;
+                if (!commentsSection.hidden && !commentsUnsub) {
+                    commentsUnsub = db.collection('publicPosts').doc(postId).collection('comments')
+                        .orderBy('createdAt', 'asc')
+                        .onSnapshot((snap) => {
+                            commentsList.innerHTML = '';
+                            snap.forEach((c) => {
+                                commentsList.appendChild(createCommentRow(c.data()));
+                            });
+                        });
+                }
+            });
+
+            const commentInput = el.querySelector('.comment-input');
+            function sendComment() {
+                const text = commentInput.value.trim();
+                if (!text || !userData) return;
+                const batch = db.batch();
+                batch.set(db.collection('publicPosts').doc(postId).collection('comments').doc(), {
+                    authorEmail: userData.email,
+                    authorName: userData.name || userData.email,
+                    text: text,
+                    createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                });
+                batch.update(db.collection('publicPosts').doc(postId), {
+                    commentCount: firebase.firestore.FieldValue.increment(1)
+                });
+                batch.commit();
+                commentInput.value = '';
+            }
+            el.querySelector('.comment-send-btn').addEventListener('click', sendComment);
+            commentInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') sendComment(); });
+
+            return el;
+        }
+
+        function updatePublicPostEl(el, post) {
+            const likedBy = post.likedBy || [];
+            const iLiked = userData && likedBy.includes(userData.email);
+            const isMine = userData && post.authorEmail === userData.email;
+            const createdDate = post.createdAt ? post.createdAt.toDate() : new Date();
+
+            el.classList.toggle('i-liked', iLiked);
+            el.querySelector('[data-author]').textContent = post.authorName;
+            el.querySelector('[data-content]').textContent = post.text;
+            el.querySelector('[data-time]').textContent = timeAgo(createdDate);
+
+            const likeBtn = el.querySelector('.post-like-btn');
+            likeBtn.classList.toggle('liked', iLiked);
+            likeBtn.querySelector('i').className = iLiked ? 'fas fa-heart' : 'far fa-heart';
+            likeBtn.querySelector('[data-like-count]').textContent = likedBy.length;
+            el.querySelector('[data-comment-count]').textContent = post.commentCount || 0;
+
+            const imageWrap = el.querySelector('[data-image-wrap]');
+            if (post.imageUrl) {
+                const img = el.querySelector('[data-image]');
+                img.src = post.imageUrl;
+                img.onclick = () => openImageLightbox(post.imageUrl);
+                imageWrap.hidden = false;
+            } else {
+                imageWrap.hidden = true;
+            }
+
+            if (isMine && !el.querySelector('.post-delete-btn')) {
+                const del = document.createElement('i');
+                del.className = 'fas fa-trash post-delete-btn';
+                del.title = 'Delete';
+                del.addEventListener('click', () => deletePublicPost(el.dataset.postId));
+                el.querySelector('.post-header').appendChild(del);
+            }
+        }
+
+        function refreshEmptyFeedHint() {
+            if (publicPostsList.children.length === 0) {
+                publicPostsList.innerHTML = '<div class="empty-feed-hint">No public updates yet. Be the first to post!</div>';
+            }
+        }
+
+        if (userData) {
+            db.collection('publicPosts').orderBy('createdAt', 'desc').limit(50)
+                .onSnapshot((snapshot) => {
+                    snapshot.docChanges().forEach((change) => {
+                        const postId = change.doc.id;
+                        const post = change.doc.data();
+
+                        if (change.type === 'added') {
+                            const hint = publicPostsList.querySelector('.empty-feed-hint');
+                            if (hint) hint.remove();
+
+                            const el = createPublicPostCard(postId, post);
+                            updatePublicPostEl(el, post);
+
+                            if (change.newIndex === 0) {
+                                publicPostsList.prepend(el);
+                            } else {
+                                const ref = publicPostsList.children[change.newIndex - 1];
+                                if (ref) ref.after(el); else publicPostsList.appendChild(el);
+                            }
+                        } else if (change.type === 'modified') {
+                            const el = publicPostsList.querySelector(`[data-post-id="${postId}"]`);
+                            if (el) updatePublicPostEl(el, post);
+                        } else if (change.type === 'removed') {
+                            const el = publicPostsList.querySelector(`[data-post-id="${postId}"]`);
+                            if (el) el.remove();
+                        }
+                    });
+                    refreshEmptyFeedHint();
+                });
+        }
+
+        async function toggleLike(postId, currentlyLiked) {
+            if (!userData) return;
+            const update = currentlyLiked
+                ? { likedBy: firebase.firestore.FieldValue.arrayRemove(userData.email) }
+                : { likedBy: firebase.firestore.FieldValue.arrayUnion(userData.email) };
+            await db.collection('publicPosts').doc(postId).update(update);
+        }
+
+        async function deletePublicPost(postId) {
+            if (!confirm('Delete this update?')) return;
+            await db.collection('publicPosts').doc(postId).delete();
+        }
+
+        // ============ PRIVATE UPDATES (contacts-only, 24h expiry) ============
+        const privateUpdatesRow = document.getElementById('privateUpdatesRow');
+        const addPrivateUpdateBtn = document.getElementById('addPrivateUpdateBtn');
+        const addUpdateModal = document.getElementById('addUpdateModal');
+        const privateUpdateInput = document.getElementById('privateUpdateInput');
+        const postPrivateUpdateBtn = document.getElementById('postPrivateUpdateBtn');
+        const viewUpdateModal = document.getElementById('viewUpdateModal');
+
+        const privateImagePicker = wireImagePicker({
+            attachBtn: document.getElementById('privateAttachImageBtn'),
+            fileInput: document.getElementById('privateImageInput'),
+            previewWrap: document.getElementById('privateImagePreviewWrap'),
+            previewImg: document.getElementById('privateImagePreview'),
+            removeBtn: document.getElementById('privateImageRemoveBtn')
+        });
+
+        addPrivateUpdateBtn.addEventListener('click', () => {
+            privateUpdateInput.value = '';
+            privateImagePicker.reset();
+            addUpdateModal.style.display = 'flex';
+            privateUpdateInput.focus();
+        });
+        document.getElementById('closeAddUpdateModal').addEventListener('click', () => { addUpdateModal.style.display = 'none'; });
+        addUpdateModal.addEventListener('click', (e) => { if (e.target === addUpdateModal) addUpdateModal.style.display = 'none'; });
+
+        postPrivateUpdateBtn.addEventListener('click', async () => {
+            const text = privateUpdateInput.value.trim();
+            const imageFile = privateImagePicker.getFile();
+            if ((!text && !imageFile) || !userData) return;
+
+            postPrivateUpdateBtn.disabled = true;
+            postPrivateUpdateBtn.textContent = imageFile ? 'Uploading image...' : 'Posting...';
+            try {
+                const updateRef = db.collection('privateUpdates').doc();
+                let imageUrl = null;
+                if (imageFile) {
+                    imageUrl = await uploadImage(imageFile, `privateUpdates/${updateRef.id}/${Date.now()}_${imageFile.name}`);
+                }
+
+                await updateRef.set({
+                    authorEmail: userData.email,
+                    authorName: userData.name || userData.email,
+                    text: text,
+                    imageUrl: imageUrl,
+                    createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                });
+                addUpdateModal.style.display = 'none';
+                privateImagePicker.reset();
+            } catch (error) {
+                alert('Could not post update. ' + error.message);
+            } finally {
+                postPrivateUpdateBtn.disabled = false;
+                postPrivateUpdateBtn.textContent = 'Post Update';
+            }
+        });
+
+        document.getElementById('closeViewUpdateModal').addEventListener('click', () => { viewUpdateModal.style.display = 'none'; });
+        viewUpdateModal.addEventListener('click', (e) => { if (e.target === viewUpdateModal) viewUpdateModal.style.display = 'none'; });
+
+        function openUpdateViewer(update) {
+            document.getElementById('viewUpdateAuthor').textContent = update.authorName;
+            const imgEl = document.getElementById('viewUpdateImage');
+            if (update.imageUrl) {
+                imgEl.src = update.imageUrl;
+                imgEl.hidden = false;
+            } else {
+                imgEl.hidden = true;
+            }
+            document.getElementById('viewUpdateText').textContent = update.text || '';
+            const createdDate = update.createdAt ? update.createdAt.toDate() : new Date();
+            document.getElementById('viewUpdateTime').textContent = timeAgo(createdDate);
+            viewUpdateModal.style.display = 'flex';
+        }
+
+        let myContactEmailsForUpdates = new Set();
+        let latestPrivateUpdatesSnapshot = null;
+
+        function renderPrivateUpdates() {
+            if (!latestPrivateUpdatesSnapshot || !userData) return;
+
+            Array.from(privateUpdatesRow.children).forEach((child) => {
+                if (child.id !== 'addPrivateUpdateBtn') child.remove();
+            });
+
+            const cutoff = Date.now() - 24 * 60 * 60 * 1000;
+            const visible = latestPrivateUpdatesSnapshot.docs
+                .map(d => d.data())
+                .filter(u => u.authorEmail === userData.email || myContactEmailsForUpdates.has(u.authorEmail))
+                .filter(u => u.createdAt && u.createdAt.toMillis() > cutoff);
+
+            visible.forEach((update) => {
+                privateUpdatesRow.appendChild(createStatusCard(update, () => openUpdateViewer(update)));
+            });
+        }
+
+        if (userData) {
+            db.collection('privateUpdates').orderBy('createdAt', 'desc').limit(100)
+                .onSnapshot((snapshot) => {
+                    latestPrivateUpdatesSnapshot = snapshot;
+                    renderPrivateUpdates();
+                });
+        }
+    </script>
+
+</body>
+</html>
